@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, maximum-scale=2.0, minimum-scale=1.0, viewport-fit=cover">
-    <title>MAYI · 盘口自动统计</title>
+    <title>MAYI · 数据组合统计</title>
     <style>
         * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
         html,body { width:100%; min-height:100vh; background:#121212; color:#eee; padding:6px; }
@@ -163,8 +163,8 @@
             <div id="group1Content">
                 <div class="sub-group">
                     <div class="sub-title"><span class="ant-clickable">🐜</span> ant colony data</div>
-                    <div class="input-box"><textarea id="numInput1" placeholder="G · A 盘口数据支持本地导入 、 在线同步" oninput="autoCalc(1)"></textarea><div class="input-info" id="inputInfo1">已输入：0 个</div></div>
-                    <div class="input-box"><textarea id="numInput2" placeholder="G · B 盘口数据支持本地导入 、 在线同步" oninput="autoCalc(2)"></textarea><div class="input-info" id="inputInfo2">已输入：0 个</div></div>
+                    <div class="input-box"><textarea id="numInput1" placeholder="G · A 数据支持本地导入 、 在线同步" oninput="autoCalc(1)"></textarea><div class="input-info" id="inputInfo1">已输入：0 个</div></div>
+                    <div class="input-box"><textarea id="numInput2" placeholder="G · B 数据支持本地导入 、 在线同步" oninput="autoCalc(2)"></textarea><div class="input-info" id="inputInfo2">已输入：0 个</div></div>
                     <div class="btn-group">
                         <button onclick="shuffleBoth()">🔀 shuffle</button>
                         <button onclick="copyBothData()">📋 Copy</button>
@@ -192,7 +192,7 @@
         </div>
         <div class="panel">
             <div class="panel-title">
-                <div class="panel-title-left"><span>🟥 默认规则</span></div>
+                <div class="panel-title-left"><span>🟥 基础规则</span></div>
                 <label class="switch-control"><input type="checkbox" id="rangeSwitch" onchange="toggleRangePanel()"></label>
             </div>
             <div id="rangePanelWrap" style="display:none; margin-top:8px;">
@@ -243,7 +243,7 @@
         </div>
 
         <div class="panel">
-            <div class="panel-title"><span>🟦自选规则</span><label class="switch-control"><input type="checkbox" id="matchSwitch" onchange="toggleMatchPanel()"></label></div>
+            <div class="panel-title"><span>🟦 自定义规则</span><label class="switch-control"><input type="checkbox" id="matchSwitch" onchange="toggleMatchPanel()"></label></div>
             <div id="rulePanelWrap" style="display:none; margin-top:8px;">
                 <div class="rule-import-box">
                     <textarea class="rule-import-input" id="ruleImportText" placeholder="区间规则一键导入&#10;格式：1-4→1-4" oninput="autoSaveRuleImportText()"></textarea>
@@ -642,7 +642,7 @@ function compareAll() {
     
     let totalCombos = allCombosSet.size;
     let hitCombos = hitCombosSet.size;
-    let overallRateHtml = totalCombos > 0 ? `<div class="hit-rate-display" style="margin-bottom:8px;">中奖概率：${hitCombos} / ${totalCombos} = ${((hitCombos / totalCombos) * 100).toFixed(2)}%</div>` : `<div class="hit-rate-display" style="margin-bottom:8px;">组合命中率：0 / 0 = 0.00%</div>`;
+    let overallRateHtml = totalCombos > 0 ? `<div class="hit-rate-display" style="margin-bottom:8px;">命中率：${hitCombos} / ${totalCombos} = ${((hitCombos / totalCombos) * 100).toFixed(2)}%</div>` : `<div class="hit-rate-display" style="margin-bottom:8px;">组合命中率：0 / 0 = 0.00%</div>`;
     
     const c1 = state.countData[1], c2 = state.countData[2];
     if (!c1 || !c2) { document.getElementById('compareResult').innerHTML = overallRateHtml; document.getElementById('compareResult').style.display = 'block'; return; }
@@ -659,14 +659,11 @@ function compareAll() {
     const finalSet = new Set();
     results.forEach(res => res.forEach(n => finalSet.add(n)));
     const final = Array.from(finalSet).sort((a,b)=>a-b);
-    const totalStat = getTotalZodiacStat();
-    let totalHtml = `<div class="total-zodiac-title">📊 生肖冷热门</div><div class="total-zodiac-list">`;
-    totalStat.forEach(([z,n]) => { totalHtml += `<span class="zodiac-item" onclick="zodiacUI.showTotalZodiacNum('${z}')">${z} ${n}</span>`; });
-    totalHtml += `</div><div class="zodiac-show-num" id="totalZodiacShowNum" style="display:none;margin-top:6px;"></div>`;
+    
     let resHtml = ''; texts.forEach((text,i) => { resHtml += `<div class="group-item compare-row">【${text} · ${results[i].length}】：${utils.formatNumbers(results[i])}</div>`; });
     const now = new Date();
     const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} 周${['日','一','二','三','四','五','六'][now.getDay()]}`;
-    const finalHtml = `<div class="result-title"><span>🔵 统计结果 &nbsp; ${dateStr}</span><label class="switch-control">Memo book<input type="checkbox" id="noteSwitch" onchange="toggleNote()"></label></div><textarea id="noteTextarea" class="note-textarea" placeholder="本澳彩盘口统计系统由蚂蚁数据团队研发，欢迎使用！" oninput="storage.autoSaveNote()"></textarea>${resHtml}${overallRateHtml}<div class="group-item final-row">✅ 特码 ·${final.length}：${utils.formatNumbers(final)}</div><div class="title-right"><button class="copy-btn" data-copy="${utils.formatNumbers(final)}" data-tip="cfTip">Copy</button><span id="cfTip" class="copy-tip"></span></div><div class="query-zodiac-input"><input id="queryZodiacInput" oninput="zodiacUI.queryZodiac()" placeholder="输入数字查生肖"></div><div class="query-zodiac-result" id="queryZodiacResult"></div><div class="total-zodiac-stat">${totalHtml}</div>`;
+    const finalHtml = `<div class="result-title"><span>🔵 统计结果 &nbsp; ${dateStr}</span><label class="switch-control">Memo book<input type="checkbox" id="noteSwitch" onchange="toggleNote()"></label></div><textarea id="noteTextarea" class="note-textarea" placeholder="本工具由蚂蚁数据团队研发，欢迎使用！" oninput="storage.autoSaveNote()"></textarea>${resHtml}${overallRateHtml}<div class="group-item final-row">✅ 候选数字 ·${final.length}：${utils.formatNumbers(final)}</div><div class="title-right"><button class="copy-btn" data-copy="${utils.formatNumbers(final)}" data-tip="cfTip">Copy</button><span id="cfTip" class="copy-tip"></span></div><div class="query-zodiac-input"><input id="queryZodiacInput" oninput="zodiacUI.queryZodiac()" placeholder="输入数字查生肖"></div><div class="query-zodiac-result" id="queryZodiacResult"></div>`;
     document.getElementById('compareResult').innerHTML = finalHtml;
     ui.bindCopyButtons(); storage.loadNote(); keepNoteState();
 }
