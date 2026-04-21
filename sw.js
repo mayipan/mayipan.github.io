@@ -5,7 +5,6 @@ const urlsToCache = [
   './manifest.json',
   './icon-192.png',
   './icon-512.png'
-  // 如果您的页面引用了其他 CSS/JS 文件，请在这里添加路径
 ];
 
 self.addEventListener('install', event => {
