@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>蚂蚁数据 | 专注澳彩</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #121212;
+            color: #e0e0e0;
+            padding: 20px;
+        }
+
+        /* 核心卡片容器 */
+        .container {
+            max-width: 600px;
+            width: 100%;
+            background: #1e1e1e;
+            padding: 60px 40px;
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+            animation: fadeIn 1s ease;
+        }
+
+        /* 淡入动画 */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 头像 + 呼吸 + 旋转动画 */
+        .avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin: 0 auto 30px;
+            display: block;
+            border: 3px solid #333;
+            /* 同时运行：呼吸 + 旋转 */
+            animation: breathe 3s ease-in-out infinite, rotate 10s linear infinite;
+        }
+
+        /* 呼吸效果 */
+        @keyframes breathe {
+            0%,100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        /* 360°无限旋转 */
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* 标题 */
+        h1 {
+            font-size: 28px;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 12px;
+            color: #ffffff;
+        }
+
+        /* 副标题/标签 */
+        .tag {
+            text-align: center;
+            color: #999;
+            font-size: 16px;
+            margin-bottom: 35px;
+        }
+
+        /* 介绍文字 */
+        .intro {
+            line-height: 1.8;
+            font-size: 15px;
+            color: #ccc;
+            margin-bottom: 35px;
+            text-align: center;
+        }
+
+        /* 联系方式/链接 */
+        .links {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-bottom: 40px;
+        }
+
+        .links a {
+            text-decoration: none;
+            color: #e0e0e0;
+            font-size: 15px;
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: 1px solid #444;
+            transition: all 0.3s ease;
+        }
+
+        .links a:hover {
+            background-color: #ffffff;
+            color: #121212;
+            border-color: #ffffff;
+        }
+
+        /* 版权文字 */
+        .copyright {
+            text-align: center;
+            font-size: 13px;
+            color: #666;
+            line-height: 1.6;
+        }
+
+        /* 移动端适配 */
+        @media (max-width: 576px) {
+            .container {
+                padding: 40px 25px;
+            }
+            h1 {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="https://t.me/mayiya_bot" target="_blank" rel="noopener noreferrer">
+            <img src="/my.png" alt="欢迎咨询" class="avatar">
+        </a>
+        
+        <h1>蚂蚁智能盘口</h1>
+        <div class="tag">一款专注于澳彩盘口数据、统计、分析的便民服务工具</div>
+        
+        <p class="intro">
+            实时同步官方数据，功能简洁实用，操作轻松快捷，助力理性购彩。
+            安全、正规、透明，为广大彩民提供便捷可靠的资讯服务。
+            AI自动分析、冷热号码、图表分析，帮助彩民理性参考，科学选号、中奖概率85%以上。
+        </p>
+        
+        <div class="links">
+            <a href="https://t.me/mayi2036" target="_blank">采集</a>
+            <a href="https://t.me/mdcgpankou" target="_blank">教程</a>
+            <a href="/ai.html" target="_blank">统计</a>
+        </div>
+
+        <!-- 新增版权 -->
+        <div class="copyright">
+            © 2026 <a href="/my.html" target="_blank" rel="noopener noreferrer" style="
+text-decoration: none;
+color: inherit;
+">蚂蚁数据</a> · 版权所有<br>
+            
+        </div>
+    </div>
+</body>
+</html>
