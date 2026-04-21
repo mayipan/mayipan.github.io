@@ -56,12 +56,6 @@
         .switch-control input::after { content:''; position:absolute; width:16px; height:16px; background:#fff; border-radius:50%; top:2px; left:2px; transition:0.2s; }
         .switch-control input:checked::after { left:18px; }
         .note-textarea { width:100%; height:100px; margin-top:8px; display:none; background:#252525; border:none; border-radius:8px; color:#eee; padding:8px; resize:vertical; max-height:150px; }
-        .query-zodiac-input { margin-top:8px; max-width:70%; }
-        .query-zodiac-input input { width:100%; padding:8px 6px; border-radius:8px; background:#222; color:#eee; font-size:14px; border:none; }
-        .query-zodiac-result { margin-top:8px; padding:8px; background:#252525; border-radius:8px; font-size:13px; word-break:break-word; }
-        .total-zodiac-stat { margin-top:8px; padding:8px; background:#252525; border-radius:8px; font-size:13px; }
-        .total-zodiac-list { display:grid; grid-template-columns:repeat(6,1fr); gap:6px; justify-items:center; margin-top:6px; }
-        .total-zodiac-list .zodiac-item { display:inline-block; margin:2px; padding:4px 6px; background:#252525; border-radius:6px; font-size:12px; color:#eee; cursor:pointer; white-space:nowrap; }
         .hit-rate-display { margin:10px 0; padding:8px; background:#252525; border-radius:8px; text-align:center; font-size:14px; }
         .footer { text-align:center; margin-top:16px; font-size:11px; color:#666; }
         .auth-modal { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:9999; display:flex; align-items:center; justify-content:center; display:none; }
@@ -104,11 +98,8 @@
             button, .btn-link { padding:8px 2px; font-size:12px; min-height:40px; }
             .btn-small { padding:6px 8px; font-size:11px; min-width:50px; }
             .del-rule-btn { font-size:10px; right:0px; top:-6px; }
-            .total-zodiac-list { grid-template-columns:repeat(4,1fr); gap:4px; }
-            .total-zodiac-list .zodiac-item { white-space:normal; font-size:11px; padding:4px 4px; }
             .group-item { font-size:12px; padding:6px 8px; flex-direction:column; align-items:flex-start; }
             .group-item .copy-btn { align-self:flex-end; }
-            .query-zodiac-input { max-width:100%; }
             .rule-import-input { min-height:120px; }
             .stats-two-columns { flex-direction:column; gap:8px; }
             .button-row-right { justify-content:flex-start; }
@@ -124,7 +115,6 @@
             .btn-group { gap:4px; }
             button, .btn-link { min-width:50px; font-size:11px; padding:6px 2px; }
             .btn-small { min-width:45px; font-size:10px; padding:5px 6px; }
-            .total-zodiac-list { grid-template-columns:repeat(4,1fr); gap:4px; }
             .rule-row, .custom-rule-row { flex-wrap:wrap; justify-content:space-between; }
             .rule-row .rule-index, .custom-rule-row .rule-index { width:100%; text-align:left; margin-bottom:4px; }
             .rule-row input, .custom-rule-row input { flex:1 1 40%; }
@@ -162,12 +152,11 @@
             </div>
             <div id="group1Content">
                 <div class="sub-group">
-                    <div class="sub-title"><span class="ant-clickable">🐜</span> ant colony data</div>
+                    <div class="sub-title"><span class="ant-clickable">🐜</span> Ant colony data</div>
                     <div class="input-box"><textarea id="numInput1" placeholder="G · A 数据支持本地导入 、 在线同步" oninput="autoCalc(1)"></textarea><div class="input-info" id="inputInfo1">已输入：0 个</div></div>
                     <div class="input-box"><textarea id="numInput2" placeholder="G · B 数据支持本地导入 、 在线同步" oninput="autoCalc(2)"></textarea><div class="input-info" id="inputInfo2">已输入：0 个</div></div>
                     <div class="btn-group">
                         <button onclick="shuffleBoth()">🔀 shuffle</button>
-                        <button onclick="copyBothData()">📋 Copy</button>
                         <button onclick="clearBoth()">🗑Clear</button>
                         <button onclick="importTxtToBoth()">📄 TXT</button>
                         <button id="autoSyncBtn">⚙️ 同步关</button>
@@ -243,7 +232,7 @@
         </div>
 
         <div class="panel">
-            <div class="panel-title"><span>🟦 自定义规则</span><label class="switch-control"><input type="checkbox" id="matchSwitch" onchange="toggleMatchPanel()"></label></div>
+            <div class="panel-title"><span>🟦 个性规则</span><label class="switch-control"><input type="checkbox" id="matchSwitch" onchange="toggleMatchPanel()"></label></div>
             <div id="rulePanelWrap" style="display:none; margin-top:8px;">
                 <div class="rule-import-box">
                     <textarea class="rule-import-input" id="ruleImportText" placeholder="区间规则一键导入&#10;格式：1-4→1-4" oninput="autoSaveRuleImportText()"></textarea>
@@ -287,13 +276,42 @@
 <input type="file" id="importRuleFileInput" accept=".txt" style="display:none" onchange="handleRuleFileSelect(event)">
 
 <script>
+// ==================== 工具函数 ====================
+function isLocalStorageAvailable() {
+    try { localStorage.setItem('test', '1'); localStorage.removeItem('test'); return true; }
+    catch(e) { return false; }
+}
+const STORAGE_AVAILABLE = isLocalStorageAvailable();
+
+// Toast 防堆积
+let activeToast = null;
+function showToast(msg) {
+    if (activeToast) activeToast.remove();
+    const toast = document.createElement('div');
+    toast.textContent = msg;
+    toast.style.position = 'fixed';
+    toast.style.bottom = '20px';
+    toast.style.left = '50%';
+    toast.style.transform = 'translateX(-50%)';
+    toast.style.backgroundColor = '#333';
+    toast.style.color = '#fff';
+    toast.style.padding = '8px 16px';
+    toast.style.borderRadius = '20px';
+    toast.style.fontSize = '12px';
+    toast.style.zIndex = '10000';
+    toast.style.whiteSpace = 'nowrap';
+    document.body.appendChild(toast);
+    activeToast = toast;
+    setTimeout(() => { if (activeToast === toast) { toast.remove(); activeToast = null; } }, 1500);
+}
+
 // ==================== 授权管理核心 ====================
 const SECRET_SALT = "ANT2026_ZODIAC";
 const STORAGE_KEY = "ANT_AUTH";
 
 function getDeviceCode() {
     try {
-        let code = localStorage.getItem("device_code");
+        let code = STORAGE_AVAILABLE ? localStorage.getItem("device_code") : null;
         if (!code) {
             const temp = [navigator.userAgent, screen.width, screen.height, navigator.language].join("|");
             let hash = 0;
@@ -302,7 +320,7 @@ function getDeviceCode() {
                 hash = hash & hash;
             }
             code = Math.abs(hash).toString(16).toUpperCase();
-            localStorage.setItem("device_code", code);
+            if (STORAGE_AVAILABLE) localStorage.setItem("device_code", code);
         }
         return code;
     } catch(e) { return "UNKNOWN_DEVICE"; }
@@ -364,6 +382,7 @@ function validateAuth(device, auth) {
 }
 
 function checkAuthStatus() {
+    if (!STORAGE_AVAILABLE) return true; // 无存储则默认通过
     const auth = localStorage.getItem(STORAGE_KEY);
     return auth && validateAuth(getDeviceCode(), auth);
 }
@@ -374,7 +393,7 @@ function checkAuth() {
     const tip = document.getElementById("authTip");
     if (!a) { tip.textContent = "请输入授权码！"; return; }
     if (validateAuth(d, a)) {
-        localStorage.setItem(STORAGE_KEY, a);
+        if (STORAGE_AVAILABLE) localStorage.setItem(STORAGE_KEY, a);
         tip.style.color = "#6cce6c";
         tip.textContent = "✅ 验证成功！";
         setTimeout(()=>document.getElementById("authModal").style.display="none",800);
@@ -428,36 +447,20 @@ const ui = {
     }
 };
 
-const zodiacUI = {
-    showTotalZodiacNum(zodiac) {
-        const nums = ZODIAC_NUMBER_MAP[zodiac].map(utils.padZero).join(' ');
-        const el = document.getElementById('totalZodiacShowNum');
-        if (el) {
-            el.textContent = `${zodiac}：${nums}`;
-            el.style.display = 'block';
-        }
-    },
-    queryZodiac() {
-        const val = document.getElementById('queryZodiacInput').value.trim();
-        const nums = utils.parseNumbers(val);
-        document.getElementById('queryZodiacResult').textContent = nums.map(n => `${utils.padZero(n)}=${utils.getZodiac(n)}`).join('  ');
-    }
-};
-
 const storage = {
-    saveNote() { localStorage.setItem('lottery_note', document.getElementById('noteTextarea').value); },
-    loadNote() { document.getElementById('noteTextarea').value = localStorage.getItem('lottery_note') || ''; },
+    saveNote() { if (STORAGE_AVAILABLE) localStorage.setItem('lottery_note', document.getElementById('noteTextarea').value); },
+    loadNote() { if (STORAGE_AVAILABLE) document.getElementById('noteTextarea').value = localStorage.getItem('lottery_note') || ''; },
     autoSaveNote() { clearTimeout(state.timers.noteSave); state.timers.noteSave = setTimeout(storage.saveNote, 500); },
-    saveInput() { localStorage.setItem('lottery_input1', document.getElementById('numInput1').value); localStorage.setItem('lottery_input2', document.getElementById('numInput2').value); },
-    loadInput() { document.getElementById('numInput1').value = localStorage.getItem('lottery_input1') || ''; document.getElementById('numInput2').value = localStorage.getItem('lottery_input2') || ''; },
+    saveInput() { if (STORAGE_AVAILABLE) { localStorage.setItem('lottery_input1', document.getElementById('numInput1').value); localStorage.setItem('lottery_input2', document.getElementById('numInput2').value); } },
+    loadInput() { if (STORAGE_AVAILABLE) { document.getElementById('numInput1').value = localStorage.getItem('lottery_input1') || ''; document.getElementById('numInput2').value = localStorage.getItem('lottery_input2') || ''; } },
     autoSaveInput() { clearTimeout(state.timers.inputSave); state.timers.inputSave = setTimeout(storage.saveInput, 300); },
-    saveRange() { localStorage.setItem('lottery_range', document.getElementById('rangeData').value); },
-    loadRange() { const saved = localStorage.getItem('lottery_range'); if (saved !== null) document.getElementById('rangeData').value = saved; },
+    saveRange() { if (STORAGE_AVAILABLE) localStorage.setItem('lottery_range', document.getElementById('rangeData').value); },
+    loadRange() { if (STORAGE_AVAILABLE) { const saved = localStorage.getItem('lottery_range'); if (saved !== null) document.getElementById('rangeData').value = saved; } },
     autoSaveRange() { clearTimeout(state.timers.rangeSave); state.timers.rangeSave = setTimeout(() => { storage.saveRange(); compareAll(); }, 300); },
-    saveRuleImportText() { localStorage.setItem('rule_import_text', document.getElementById('ruleImportText').value); },
-    loadRuleImportText() { const saved = localStorage.getItem('rule_import_text'); if (saved !== null) document.getElementById('ruleImportText').value = saved; },
+    saveRuleImportText() { if (STORAGE_AVAILABLE) localStorage.setItem('rule_import_text', document.getElementById('ruleImportText').value); },
+    loadRuleImportText() { if (STORAGE_AVAILABLE) { const saved = localStorage.getItem('rule_import_text'); if (saved !== null) document.getElementById('ruleImportText').value = saved; } },
     autoSaveRuleImportText() { clearTimeout(state.timers.ruleImportSave); state.timers.ruleImportSave = setTimeout(storage.saveRuleImportText, 300); },
-    clearRuleImportText() { localStorage.removeItem('rule_import_text'); }
+    clearRuleImportText() { if (STORAGE_AVAILABLE) localStorage.removeItem('rule_import_text'); }
 };
 
 function onRangeDataChange() { 
@@ -470,15 +473,13 @@ function onRangeDataChange() {
 }
 
 function autoSaveRuleImportText() { storage.autoSaveRuleImportText(); }
-function toggleNote() { const noteEl = document.getElementById('noteTextarea'); const checked = document.getElementById('noteSwitch').checked; noteEl.style.display = checked ? 'block' : 'none'; localStorage.setItem('note_visible', checked ? 1 : 0); }
-function keepNoteState() { if (localStorage.getItem('note_visible') == 1) { document.getElementById('noteSwitch').checked = true; document.getElementById('noteTextarea').style.display = 'block'; } }
-function toggleGlobalStat() { const chk = document.getElementById('globalStatSwitch'); const contents = document.querySelectorAll('.stat-content'); for (let el of contents) el.style.display = chk.checked ? 'block' : 'none'; localStorage.setItem('globalStatVisible', chk.checked ? 1 : 0); }
+function toggleNote() { const noteEl = document.getElementById('noteTextarea'); const checked = document.getElementById('noteSwitch').checked; noteEl.style.display = checked ? 'block' : 'none'; if (STORAGE_AVAILABLE) localStorage.setItem('note_visible', checked ? 1 : 0); }
+function keepNoteState() { if (STORAGE_AVAILABLE && localStorage.getItem('note_visible') == 1) { document.getElementById('noteSwitch').checked = true; document.getElementById('noteTextarea').style.display = 'block'; } }
+function toggleGlobalStat() { const chk = document.getElementById('globalStatSwitch'); const contents = document.querySelectorAll('.stat-content'); for (let el of contents) el.style.display = chk.checked ? 'block' : 'none'; if (STORAGE_AVAILABLE) localStorage.setItem('globalStatVisible', chk.checked ? 1 : 0); }
 function toggleMatchPanel() { const wrap = document.getElementById('rulePanelWrap'); const on = document.getElementById('matchSwitch').checked; wrap.style.display = on ? 'block' : 'none'; }
 function toggleRangePanel() { const wrap = document.getElementById('rangePanelWrap'); const on = document.getElementById('rangeSwitch').checked; wrap.style.display = on ? 'block' : 'none'; }
 function toggleSelectRangePanel() { const wrap = document.getElementById('selectRangePanelWrap'); const on = document.getElementById('selectRangeSwitch').checked; wrap.style.display = on ? 'block' : 'none'; }
-function copyBothData() { const ga = document.getElementById('numInput1').value.trim(); const gb = document.getElementById('numInput2').value.trim(); copyToClipboard("G · A\n" + ga + "\n...........\nG · B\n" + gb, 'inputTip2'); }
 function shuffleBoth() { [1,2].forEach(n => { const el = document.getElementById(`numInput${n}`); const nums = utils.parseNumbers(el.value); el.value = utils.shuffleArray(nums).map(utils.padZero).join(' '); autoCalc(n); }); }
-function sortBoth() { [1,2].forEach(n => { const el = document.getElementById(`numInput${n}`); const nums = utils.parseNumbers(el.value).sort((a,b)=>a-b); el.value = nums.map(utils.padZero).join(' '); autoCalc(n); }); }
 function clearBoth() { 
     [1,2].forEach(n => { 
         document.getElementById(`numInput${n}`).value = ''; 
@@ -490,10 +491,9 @@ function clearBoth() {
     }); 
     autoCalc(1); 
     autoCalc(2);
-    // 清空数据时同时清除期号显示和存储，并显示“蚂蚁数据-专注澳彩”
     const periodSpan = document.getElementById('periodDisplay');
     if (periodSpan) periodSpan.innerText = '蚂蚁数据-专注澳彩';
-    localStorage.removeItem('last_period');
+    if (STORAGE_AVAILABLE) localStorage.removeItem('last_period');
 }
 function clearRange() { document.getElementById('rangeData').value = ''; storage.saveRange(); onRangeDataChange(); }
 
@@ -597,7 +597,6 @@ function clearAllRules() { for (let i=1;i<=5;i++) { document.getElementById(`rul
 function syncRules() { let def = getDynamicDefaults(); for (let i=1;i<=5;i++) { document.getElementById(`rule${i}a`).value = def[i-1].a; document.getElementById(`rule${i}b`).value = def[i-1].b; } state.customRules = []; renderCustomRules(); }
 function resetRules() { syncRules(); setTimeout(() => compareAll(), 50); }
 function onRuleChange() { clearTimeout(state.timers.ruleChange); state.timers.ruleChange = setTimeout(compareAll, 200); }
-function getTotalZodiacStat() { let total = {}; ZODIAC_LIST.forEach(z=>total[z]=0); let a1 = utils.parseNumbers(document.getElementById('numInput1').value); let a2 = utils.parseNumbers(document.getElementById('numInput2').value); a1.forEach(n=>total[utils.getZodiac(n)]++); a2.forEach(n=>total[utils.getZodiac(n)]++); return Object.entries(total).sort((a,b)=>b[1]-a[1]); }
 
 function compareAll() {
     const rules = [
@@ -663,7 +662,7 @@ function compareAll() {
     let resHtml = ''; texts.forEach((text,i) => { resHtml += `<div class="group-item compare-row">【${text} · ${results[i].length}】：${utils.formatNumbers(results[i])}</div>`; });
     const now = new Date();
     const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} 周${['日','一','二','三','四','五','六'][now.getDay()]}`;
-    const finalHtml = `<div class="result-title"><span>🔵 统计结果 &nbsp; ${dateStr}</span><label class="switch-control">Memo book<input type="checkbox" id="noteSwitch" onchange="toggleNote()"></label></div><textarea id="noteTextarea" class="note-textarea" placeholder="本工具由蚂蚁数据团队研发，欢迎使用！" oninput="storage.autoSaveNote()"></textarea>${resHtml}${overallRateHtml}<div class="group-item final-row">✅ 候选数字 ·${final.length}：${utils.formatNumbers(final)}</div><div class="title-right"><button class="copy-btn" data-copy="${utils.formatNumbers(final)}" data-tip="cfTip">Copy</button><span id="cfTip" class="copy-tip"></span></div><div class="query-zodiac-input"><input id="queryZodiacInput" oninput="zodiacUI.queryZodiac()" placeholder="输入数字查生肖"></div><div class="query-zodiac-result" id="queryZodiacResult"></div>`;
+    const finalHtml = `<div class="result-title"><span>🔵 统计结果 &nbsp; ${dateStr}</span><label class="switch-control">Memo book<input type="checkbox" id="noteSwitch" onchange="toggleNote()"></label></div><textarea id="noteTextarea" class="note-textarea" placeholder="本工具由蚂蚁数据团队研发，欢迎使用！" oninput="storage.autoSaveNote()"></textarea>${resHtml}${overallRateHtml}<div class="group-item final-row">✅ 精选 ·${final.length}：${utils.formatNumbers(final)}</div><div class="title-right"><button class="copy-btn" data-copy="${utils.formatNumbers(final)}" data-tip="cfTip">Copy</button><span id="cfTip" class="copy-tip"></span></div>`;
     document.getElementById('compareResult').innerHTML = finalHtml;
     ui.bindCopyButtons(); storage.loadNote(); keepNoteState();
 }
@@ -761,7 +760,6 @@ function updateGridCount() {
     }
 }
 
-// ========== 支持 A 为区间的 applyUserEditedRule ==========
 function applyUserEditedRule(ruleText) {
     try {
         if (currentEditingType === null || currentEditingA === null) {
@@ -778,7 +776,6 @@ function applyUserEditedRule(ruleText) {
         if (!aStr) { showToast('❌ A 不能为空'); return false; }
         if (!window.selectCurrentData) { showToast('❌ 数据未加载，请刷新页面'); return false; }
         
-        // 解析 A 字符串，返回数字数组
         function parseAValues(aStr) {
             const values = new Set();
             const parts = aStr.split(',');
@@ -807,11 +804,8 @@ function applyUserEditedRule(ruleText) {
         const oldAStr = currentEditingA.toString();
         const oldAValues = parseAValues(oldAStr);
         
-        // 1. 删除旧规则
         if (currentEditingType === 'hot') {
-            for (let a of oldAValues) {
-                if (hot.has(a)) hot.delete(a);
-            }
+            for (let a of oldAValues) if (hot.has(a)) hot.delete(a);
         } else if (currentEditingType === 'warm') {
             for (let a of oldAValues) {
                 let warmSet = warm.get(a);
@@ -830,20 +824,14 @@ function applyUserEditedRule(ruleText) {
                         coldDetails.delete(a);
                     } else {
                         let detail = coldDetails.get(a);
-                        if (detail) {
-                            detail.rules = intervals;
-                            detail.originalB = [];
-                        }
+                        if (detail) { detail.rules = intervals; detail.originalB = []; }
                     }
                 }
             }
         }
         
-        // 2. 添加新规则
         if (currentEditingType === 'hot') {
-            for (let a of newAValues) {
-                hot.set(a, newB);
-            }
+            for (let a of newAValues) hot.set(a, newB);
         } else if (currentEditingType === 'warm') {
             for (let a of newAValues) {
                 if (!warm.has(a)) warm.set(a, new Set());
@@ -864,12 +852,8 @@ function applyUserEditedRule(ruleText) {
                     });
                     cold.set(a, intervals);
                     let detail = coldDetails.get(a);
-                    if (detail) {
-                        detail.rules = intervals;
-                        detail.originalB = [];
-                    } else {
-                        coldDetails.set(a, { rules: intervals, originalB: [], mode: 'diff2' });
-                    }
+                    if (detail) { detail.rules = intervals; detail.originalB = []; }
+                    else coldDetails.set(a, { rules: intervals, originalB: [], mode: 'diff2' });
                 }
             }
         }
@@ -892,7 +876,6 @@ function renderSelectRulesFromData() {
     document.getElementById('selectRulesDetail').innerHTML = rulesDetailHtml;
 }
 
-// 记录上次的规则总数，用于判断是否变化
 let lastRuleCount = 0;
 
 function refreshSelectRange() {
@@ -900,13 +883,10 @@ function refreshSelectRange() {
         const rules = parseRangeDataToRules();
         const totalRules = rules.length;
         const periodInput = document.getElementById('selectPeriodInput');
-        
-        // 如果规则总数发生变化，则同步组数（默认规则更新时）
         if (periodInput && totalRules !== lastRuleCount) {
             periodInput.value = totalRules;
             lastRuleCount = totalRules;
         }
-        
         if (totalRules === 0) {
             document.getElementById('selectRulesDetail').innerHTML = '<div>无数据</div>';
             document.getElementById('selectAbSequenceContainer').innerHTML = '<div class="ab-line">无数据</div>';
@@ -1079,24 +1059,6 @@ function doImportWarm() { const { warm } = window.selectCurrentData; const rules
 function importColdRules() { if (!window.selectCurrentData) { refreshSelectRange(); setTimeout(()=>{ if(window.selectCurrentData) doImportCold(); else showToast('无数据'); },150); return; } doImportCold(); }
 function doImportCold() { const { cold } = window.selectCurrentData; const rulesList = []; for(let [a, intervals] of cold.entries()) for(let inv of intervals) rulesList.push({ a: a.toString(), b: inv }); importRulesToConfig(rulesList); }
 
-function showToast(msg) {
-    const toast = document.createElement('div');
-    toast.textContent = msg;
-    toast.style.position = 'fixed';
-    toast.style.bottom = '20px';
-    toast.style.left = '50%';
-    toast.style.transform = 'translateX(-50%)';
-    toast.style.backgroundColor = '#333';
-    toast.style.color = '#fff';
-    toast.style.padding = '8px 16px';
-    toast.style.borderRadius = '20px';
-    toast.style.fontSize = '12px';
-    toast.style.zIndex = '10000';
-    toast.style.whiteSpace = 'nowrap';
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 1500);
-}
-
 function renderBase(num, total, unique, maxCount) { 
     let container = document.getElementById(`baseResult${num}`); 
     if (!container) return; 
@@ -1126,13 +1088,12 @@ function calculate(num) {
         state.minMax[num] = {min:0,max:0}; 
         document.getElementById(`baseResult${num}`).innerHTML = ''; 
         document.getElementById(`groupResult${num}`).innerHTML = ''; 
-        // 检查是否两个输入框都为空，若是则清除期号并显示“蚂蚁数据-专注澳彩”
         const val1 = document.getElementById('numInput1').value.trim();
         const val2 = document.getElementById('numInput2').value.trim();
         if (!utils.parseNumbers(val1).length && !utils.parseNumbers(val2).length) {
             const periodSpan = document.getElementById('periodDisplay');
             if (periodSpan) periodSpan.innerText = '蚂蚁数据-专注澳彩';
-            localStorage.removeItem('last_period');
+            if (STORAGE_AVAILABLE) localStorage.removeItem('last_period');
         }
         return; 
     } 
@@ -1151,14 +1112,13 @@ function autoCalc(num) {
     storage.autoSaveInput(); 
     clearTimeout(state.timers.autoCompare); 
     state.timers.autoCompare = setTimeout(compareAll, 260); 
-    // 再次检查是否需要清除期号（两个输入框都无数据）
     const val1 = document.getElementById('numInput1').value.trim();
     const val2 = document.getElementById('numInput2').value.trim();
     if (!utils.parseNumbers(val1).length && !utils.parseNumbers(val2).length) {
         const periodSpan = document.getElementById('periodDisplay');
         if (periodSpan && periodSpan.innerText !== '蚂蚁数据-专注澳彩') {
             periodSpan.innerText = '蚂蚁数据-专注澳彩';
-            localStorage.removeItem('last_period');
+            if (STORAGE_AVAILABLE) localStorage.removeItem('last_period');
         }
     }
 }
@@ -1174,47 +1134,35 @@ const DATA_API_URL = 'https://mayipan.eu.cc/gab_summary.html';
 let autoSyncInterval = null;
 let isAutoSyncing = false;
 
-// 检查当前时间是否在 21:00 - 21:10 之间
 function isSyncTimeAllowed() {
     const now = new Date();
     const hours = now.getHours();
     const minutes = now.getMinutes();
-    // 21:00 到 21:10 之间（包含边界）
-    if (hours === 21 && minutes >= 0 && minutes <= 10) return true;
-    return false;
+    return (hours === 21 && minutes >= 0 && minutes <= 10);
 }
 
-// 解析 gab_summary.html 格式，提取 GA 和 GB 数字行
 function extractGAGBFromText(text) {
     const lines = text.split(/\r?\n/);
-    let gaLine = null;
-    let gbLine = null;
-    let foundGA = false;
-    let foundGB = false;
+    let gaLine = null, gbLine = null;
+    let foundGA = false, foundGB = false;
     for (let i = 0; i < lines.length; i++) {
         let line = lines[i].trim();
         if (line === "GA") {
             foundGA = true;
-            if (i + 1 < lines.length) {
-                gaLine = lines[i+1].trim();
-            }
+            if (i + 1 < lines.length) gaLine = lines[i+1].trim();
             continue;
         }
         if (line === "GB") {
             foundGB = true;
-            if (i + 1 < lines.length) {
-                gbLine = lines[i+1].trim();
-            }
+            if (i + 1 < lines.length) gbLine = lines[i+1].trim();
             break;
         }
     }
-    // 提取期号（第一行）
     let periodMatch = text.match(/新澳彩第:\s*(\d{7})期/);
     let periodText = periodMatch ? periodMatch[0] : null;
     return { ga: gaLine, gb: gbLine, period: periodText };
 }
 
-// 内部同步核心（可控制是否显示提示）
 async function performSyncInternal(showToastMsg = true) {
     try {
         const controller = new AbortController();
@@ -1224,25 +1172,22 @@ async function performSyncInternal(showToastMsg = true) {
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
         const text = await resp.text();
         if (!text.trim()) throw new Error('返回数据为空');
-        
         const { ga, gb, period } = extractGAGBFromText(text);
         if (period) {
             const periodSpan = document.getElementById('periodDisplay');
             if (periodSpan) periodSpan.innerText = period;
-            localStorage.setItem('last_period', period);
+            if (STORAGE_AVAILABLE) localStorage.setItem('last_period', period);
         } else {
             console.warn('未解析到期号');
             const periodSpan = document.getElementById('periodDisplay');
             if (periodSpan && !showToastMsg) {
-                // 强制同步不修改期号显示？保持原有逻辑：无期号时显示默认
                 if (periodSpan.innerText === '蚂蚁数据-专注澳彩') {}
                 else periodSpan.innerText = '蚂蚁数据-专注澳彩';
             } else if (periodSpan && showToastMsg) {
                 periodSpan.innerText = '蚂蚁数据-专注澳彩';
             }
-            localStorage.removeItem('last_period');
+            if (STORAGE_AVAILABLE) localStorage.removeItem('last_period');
         }
-        
         if (!ga || !gb) {
             if (showToastMsg) showToast('数据格式错误，无法解析 GA/GB');
             return false;
@@ -1261,7 +1206,6 @@ async function performSyncInternal(showToastMsg = true) {
     }
 }
 
-// 带时间检查的自动同步（用于自动轮询和手动开关）
 async function performSync() {
     if (!isSyncTimeAllowed()) {
         console.log('非同步时段，跳过执行');
@@ -1270,7 +1214,6 @@ async function performSync() {
     return performSyncInternal(true);
 }
 
-// 强制同步：无时间限制、无任何提示
 async function forceSyncWithoutToast() {
     return performSyncInternal(false);
 }
@@ -1284,7 +1227,7 @@ async function pollAndSync() {
         let periodMatch = text.match(/新澳彩第:\s*(\d{7})期/);
         if (periodMatch) {
             const newPeriod = periodMatch[0];
-            const savedPeriod = localStorage.getItem('last_period');
+            const savedPeriod = STORAGE_AVAILABLE ? localStorage.getItem('last_period') : null;
             if (savedPeriod !== newPeriod) {
                 console.log('期号变化，执行完整同步');
                 await performSync();
@@ -1300,17 +1243,14 @@ async function pollAndSync() {
 }
 
 function toggleAutoSync() {
-    // 非允许时间不允许操作，给出明确提示
     if (!isSyncTimeAllowed()) {
         showToast('⚠️ 自动同步仅限 21:00-21:10 操作');
         return;
     }
     const btn = document.getElementById('autoSyncBtn');
     if (isAutoSyncing) {
-        if (autoSyncInterval) {
-            clearInterval(autoSyncInterval);
-            autoSyncInterval = null;
-        }
+        if (autoSyncInterval) clearInterval(autoSyncInterval);
+        autoSyncInterval = null;
         isAutoSyncing = false;
         btn.innerText = '⚙️ 同步关';
         showToast('已关闭自动同步');
@@ -1320,26 +1260,19 @@ function toggleAutoSync() {
         performSync().finally(() => {
             if (autoSyncInterval) clearInterval(autoSyncInterval);
             autoSyncInterval = setInterval(() => {
-                if (isAutoSyncing && isSyncTimeAllowed()) {
-                    pollAndSync();
-                } else if (isAutoSyncing && !isSyncTimeAllowed()) {
-                    // 如果时间窗口结束，自动关闭同步
-                    toggleAutoSync(); // 调用自身关闭
-                }
+                if (isAutoSyncing && isSyncTimeAllowed()) pollAndSync();
+                else if (isAutoSyncing && !isSyncTimeAllowed()) toggleAutoSync();
             }, 5 * 60 * 1000);
             showToast('已开启自动同步（每5分钟检查更新）');
         });
     }
 }
 
-// 定时检查时间窗口，若超出时段且同步开启，则自动关闭
 function startTimeWindowMonitor() {
     setInterval(() => {
         if (!isSyncTimeAllowed() && isAutoSyncing) {
-            if (autoSyncInterval) {
-                clearInterval(autoSyncInterval);
-                autoSyncInterval = null;
-            }
+            if (autoSyncInterval) clearInterval(autoSyncInterval);
+            autoSyncInterval = null;
             isAutoSyncing = false;
             const btn = document.getElementById('autoSyncBtn');
             if (btn) btn.innerText = '⚙️ 同步关';
@@ -1401,29 +1334,24 @@ window.onload = function() {
     clearAllRules();
     autoCalc(1); autoCalc(2);
     setTimeout(() => { compareAll(); refreshSelectRange(); }, 100);
-    let saved = localStorage.getItem('globalStatVisible');
+    let saved = STORAGE_AVAILABLE ? localStorage.getItem('globalStatVisible') : null;
     let chk = document.getElementById('globalStatSwitch');
     if (saved === '1') chk.checked = true; else chk.checked = false;
     toggleGlobalStat();
     
-    const savedPeriod = localStorage.getItem('last_period');
+    const savedPeriod = STORAGE_AVAILABLE ? localStorage.getItem('last_period') : null;
     const periodSpan = document.getElementById('periodDisplay');
-    if (savedPeriod) {
-        if (periodSpan) periodSpan.innerText = savedPeriod;
-    } else {
-        if (periodSpan) periodSpan.innerText = '蚂蚁数据-专注澳彩';
-    }
+    if (savedPeriod) periodSpan.innerText = savedPeriod;
+    else periodSpan.innerText = '蚂蚁数据-专注澳彩';
     
     const periodInput = document.getElementById('selectPeriodInput');
-    function handlePeriodBlur() { refreshSelectRange(); }
-    periodInput.addEventListener('blur', handlePeriodBlur);
+    periodInput.addEventListener('blur', () => refreshSelectRange());
     
-    function handleRefreshClick() { clearAllRules(); refreshSelectRange(); }
-    document.getElementById('refreshSelectRulesBtn').addEventListener('click', handleRefreshClick);
+    document.getElementById('refreshSelectRulesBtn').addEventListener('click', () => { clearAllRules(); refreshSelectRange(); });
     document.getElementById('importSelectHotBtn').addEventListener('click', importHotRules);
     document.getElementById('importSelectWarmBtn').addEventListener('click', importWarmRules);
     document.getElementById('importSelectColdBtn').addEventListener('click', importColdRules);
-    document.getElementById('coldModeSelect').addEventListener('change', function() { refreshSelectRange(); });
+    document.getElementById('coldModeSelect').addEventListener('change', () => refreshSelectRange());
     
     document.getElementById('importRulesFromRangeBtn').onclick = importRulesFromRange;
     document.getElementById('onlineCollectRangeBtn').onclick = onlineCollectRange;
@@ -1437,18 +1365,12 @@ window.onload = function() {
     const addBtn = document.getElementById('addCustomRuleBtn');
     if (addBtn) addBtn.addEventListener('click', addCustomRule);
     
-    // 为 🐜 图标添加强制同步事件（无提示）
     const antIcon = document.querySelector('.ant-clickable');
     if (antIcon) {
-        antIcon.addEventListener('click', function(e) {
-            e.stopPropagation();
-            forceSyncWithoutToast();
-        });
+        antIcon.addEventListener('click', (e) => { e.stopPropagation(); forceSyncWithoutToast(); });
     }
     
-    // 启动时间窗口监控
     startTimeWindowMonitor();
-    
     refreshSelectRange();
     window.editRule = editRule;
 };
