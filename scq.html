@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>蚂蚁数据 · 授权码管理生成器</title>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { background:#0a0a0a; color:#e0e0e0; font-family: system-ui, -apple-system, sans-serif; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .card { background: #1e1e1e; border-radius: 24px; padding: 20px; margin-bottom: 24px; }
+        .card-title { font-size: 18px; font-weight: 600; margin-bottom: 16px; border-bottom: 1px solid #2c2c2c; padding-bottom: 8px; }
+        .form-row { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; margin-bottom: 20px; }
+        .form-group { flex: 1; min-width: 140px; }
+        .form-group label { font-size: 12px; color: #aaa; display: block; margin-bottom: 6px; }
+        input, button { background: #2a2a2a; border: none; border-radius: 40px; padding: 10px 14px; color: white; font-size: 14px; outline: none; }
+        button { background: #007bff; cursor: pointer; transition: 0.2s; }
+        button:hover { background: #0056b3; transform: scale(0.98); }
+        button.danger { background: #dc3545; }
+        button.danger:hover { background: #b02a37; }
+        button.secondary { background: #3a3a3a; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 16px; }
+        th, td { padding: 12px 8px; text-align: left; border-bottom: 1px solid #2c2c2c; }
+        .code-value { font-family: monospace; font-weight: bold; color: #ffd966; }
+        .status-active { color: #6fcf97; }
+        .status-expired { color: #e74c3c; }
+        .actions button { padding: 4px 12px; margin: 0 4px; font-size: 12px; }
+        .toolbar { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; justify-content: space-between; }
+        .verify-result { margin-top: 12px; padding: 8px; border-radius: 12px; }
+        .success { background: #1e3a2e; color: #6fcf97; }
+        .error { background: #3a1e1e; color: #e74c3c; }
+        .note { background: #2a2a2a; border-radius: 16px; padding: 12px; font-size: 12px; margin-top: 16px; }
+        code { background: #0a0a0a; padding: 2px 6px; border-radius: 6px; color: #ffd966; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="card">
+        <div class="card-title">🔐 授权码管理生成器</div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>前缀（可选）</label>
+                <input type="text" id="codePrefix" placeholder="例如 ANT_">
+            </div>
+            <div class="form-group">
+                <label>长度（不含前缀）</label>
+                <input type="number" id="codeLength" value="12" min="6" max="32">
+            </div>
+            <div class="form-group">
+                <label>有效期（天数）</label>
+                <input type="number" id="expiryDays" value="30" min="1" max="365">
+            </div>
+            <div class="form-group">
+                <button id="generateBtn">➕ 生成授权码</button>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>自定义授权码</label>
+                <input type="text" id="customCode" placeholder="直接输入授权码">
+            </div>
+            <div class="form-group">
+                <label>自定义过期时间</label>
+                <input type="datetime-local" id="customExpiry">
+            </div>
+            <div class="form-group">
+                <button id="addCustomBtn" class="secondary">📝 手动添加</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="toolbar">
+            <div>
+                <button id="exportJsonBtn" class="secondary">📤 导出 JSON</button>
+                <button id="exportCsvBtn" class="secondary">📄 导出 CSV</button>
+                <button id="importBtn" class="secondary">📂 导入 JSON</button>
+                <input type="file" id="importFile" accept=".json" style="display:none">
+            </div>
+            <button id="clearAllBtn" class="danger">🗑 清空所有</button>
+        </div>
+        <table id="codeTable">
+            <thead><tr><th>授权码</th><th>生成时间</th><th>过期时间</th><th>状态</th><th>操作</th></tr></thead>
+            <tbody id="codeTableBody"><tr><td colspan="5" style="text-align:center;">暂无授权码</td></tr></tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <div class="card-title">🔍 验证授权码（测试 Worker）</div>
+        <div class="form-row">
+            <div class="form-group" style="flex:3">
+                <input type="text" id="testCode" placeholder="输入授权码进行测试">
+            </div>
+            <div class="form-group">
+                <button id="testVerifyBtn">🔎 验证</button>
+            </div>
+        </div>
+        <div id="verifyResult" class="verify-result"></div>
+        <div class="note">
+            💡 说明：验证会请求 <code>https://api.mycm.cc.cd/verify</code> 接口，需要设备码（自动生成）配合。<br>
+            生成的授权码需<strong>手动添加到 Worker 的环境变量 AUTH_CODE 中</strong>才能通过验证。<br>
+            如果验证失败，请检查 Worker 是否已正确部署并配置了环境变量。
+        </div>
+    </div>
+</div>
+
+<script>
+    const STORAGE_KEY = 'ANT_AUTH_CODES';
+    const WORKER_URL = 'https://api.mycm.cc.cd';
+
+    function getCodes() {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? JSON.parse(raw) : [];
+    }
+    function saveCodes(codes) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(codes));
+        renderTable();
+    }
+    function randomString(len) {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        let result = '';
+        for (let i = 0; i < len; i++) result += chars[Math.floor(Math.random() * chars.length)];
+        return result;
+    }
+    function generateCode(prefix, length, days) {
+        const code = prefix + randomString(length);
+        const expireAt = new Date(Date.now() + days * 86400000);
+        return { code, createdAt: new Date().toISOString(), expiresAt: expireAt.toISOString() };
+    }
+    function addCode(code, expiresAtISO) {
+        const codes = getCodes();
+        if (codes.some(c => c.code === code)) { alert('授权码已存在'); return false; }
+        codes.push({ code, createdAt: new Date().toISOString(), expiresAt: expiresAtISO });
+        saveCodes(codes);
+        return true;
+    }
+    function deleteCode(idx) { const codes = getCodes(); codes.splice(idx,1); saveCodes(codes); }
+    function clearAll() { if(confirm('确定清空所有授权码？')) saveCodes([]); }
+    function isExpired(expiresAt) { return new Date(expiresAt) < new Date(); }
+
+    function renderTable() {
+        const codes = getCodes();
+        const tbody = document.getElementById('codeTableBody');
+        if(!codes.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">暂无授权码</td></tr>'; return; }
+        let html = '';
+        codes.forEach((c, idx) => {
+            const expired = isExpired(c.expiresAt);
+            html += `<tr>
+                <td class="code-value">${escapeHtml(c.code)}</td>
+                <td>${new Date(c.createdAt).toLocaleString()}</td>
+                <td>${new Date(c.expiresAt).toLocaleString()}</td>
+                <td class="${expired ? 'status-expired' : 'status-active'}">${expired ? '已过期' : '有效'}</td>
+                <td class="actions">
+                    <button class="secondary" onclick="copyCode('${escapeHtml(c.code)}')">📋 复制</button>
+                    <button class="danger" onclick="deleteCode(${idx})">🗑 删除</button>
+                </td>
+            </tr>`;
+        });
+        tbody.innerHTML = html;
+    }
+    function escapeHtml(str) { return str.replace(/[&<>]/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;' }[m])); }
+    window.copyCode = async (text) => {
+        try { await navigator.clipboard.writeText(text); alert('已复制：'+text); }
+        catch(e) { const ta=document.createElement('textarea'); ta.value=text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); alert('已复制：'+text); }
+    };
+    window.deleteCode = deleteCode;
+
+    function exportJSON() {
+        const data = JSON.stringify(getCodes(), null, 2);
+        const blob = new Blob([data], {type:'application/json'});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `auth_codes_${new Date().toISOString().slice(0,19)}.json`;
+        a.click(); URL.revokeObjectURL(a.href);
+    }
+    function exportCSV() {
+        const codes = getCodes();
+        const rows = [['授权码','生成时间','过期时间','状态']];
+        codes.forEach(c => rows.push([c.code, new Date(c.createdAt).toLocaleString(), new Date(c.expiresAt).toLocaleString(), isExpired(c.expiresAt)?'已过期':'有效']));
+        const csv = rows.map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+        const blob = new Blob(["\uFEFF"+csv], {type:'text/csv;charset=utf-8;'});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `auth_codes_${new Date().toISOString().slice(0,19)}.csv`;
+        a.click(); URL.revokeObjectURL(a.href);
+    }
+    function importJSON(file) {
+        const reader = new FileReader();
+        reader.onload = e => {
+            try {
+                const imported = JSON.parse(e.target.result);
+                if(!Array.isArray(imported)) throw new Error('不是数组');
+                let codes = getCodes();
+                imported.forEach(item => {
+                    if(item.code && !codes.some(c=>c.code===item.code)) {
+                        codes.push({ code: item.code, createdAt: item.createdAt || new Date().toISOString(), expiresAt: item.expiresAt || new Date(Date.now()+30*86400000).toISOString() });
+                    }
+                });
+                saveCodes(codes);
+                alert(`导入成功，新增 ${imported.length} 条`);
+            } catch(err) { alert('JSON解析失败'); }
+        };
+        reader.readAsText(file);
+    }
+
+    // 设备码（与主工具一致）
+    function getDeviceUUID() {
+        let uuid = localStorage.getItem('ANT_DEVICE_UUID');
+        if (!uuid) {
+            uuid = crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random()*16|0; const v = c==='x'?r:(r&0x3|0x8); return v.toString(16); });
+            localStorage.setItem('ANT_DEVICE_UUID', uuid);
+        }
+        return uuid;
+    }
+
+    async function testVerify(code) {
+        const resultDiv = document.getElementById('verifyResult');
+        resultDiv.innerHTML = '⏳ 验证中...';
+        resultDiv.className = 'verify-result';
+        const device = getDeviceUUID();
+        try {
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 10000);
+            const resp = await fetch(`${WORKER_URL}/verify`, {
+                method: 'GET',
+                headers: { 'X-Device-Code': device, 'X-Auth-Code': code },
+                signal: controller.signal
+            });
+            clearTimeout(timeout);
+            const data = await resp.json();
+            if (data.valid) {
+                resultDiv.innerHTML = `✅ 验证通过！授权码 ${code} 有效。`;
+                resultDiv.classList.add('success');
+            } else {
+                resultDiv.innerHTML = `❌ 验证失败：${data.reason || '无效授权码'}<br>请确保 Worker 环境变量中已配置此授权码。`;
+                resultDiv.classList.add('error');
+            }
+        } catch (err) {
+            resultDiv.innerHTML = `⚠️ 请求失败：${err.message}<br>请检查 Worker 是否已正确部署并支持 CORS。`;
+            resultDiv.classList.add('error');
+        }
+    }
+
+    document.getElementById('generateBtn').onclick = () => {
+        const prefix = document.getElementById('codePrefix').value;
+        const length = parseInt(document.getElementById('codeLength').value,10);
+        const days = parseInt(document.getElementById('expiryDays').value,10);
+        if(isNaN(length) || length<1) { alert('长度无效'); return; }
+        const newCode = generateCode(prefix, length, days);
+        addCode(newCode.code, newCode.expiresAt);
+    };
+    document.getElementById('addCustomBtn').onclick = () => {
+        const code = document.getElementById('customCode').value.trim();
+        let expiry = document.getElementById('customExpiry').value;
+        if(!code) { alert('请输入授权码'); return; }
+        const expiresAt = expiry ? new Date(expiry).toISOString() : new Date(Date.now()+30*86400000).toISOString();
+        addCode(code, expiresAt);
+        document.getElementById('customCode').value = '';
+        document.getElementById('customExpiry').value = '';
+    };
+    document.getElementById('exportJsonBtn').onclick = exportJSON;
+    document.getElementById('exportCsvBtn').onclick = exportCSV;
+    document.getElementById('importBtn').onclick = () => document.getElementById('importFile').click();
+    document.getElementById('importFile').onchange = e => { if(e.target.files.length) importJSON(e.target.files[0]); e.target.value=''; };
+    document.getElementById('clearAllBtn').onclick = clearAll;
+    document.getElementById('testVerifyBtn').onclick = () => {
+        const code = document.getElementById('testCode').value.trim();
+        if(!code) { alert('请输入授权码'); return; }
+        testVerify(code);
+    };
+    renderTable();
+</script>
+</body>
+</html>
