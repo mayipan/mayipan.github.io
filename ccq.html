@@ -3,351 +3,87 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>蚂蚁数据 · 授权码管理生成器（修复版）</title>
+    <title>蚂蚁数据 · 盘口自动统计</title>
     <style>
         * { margin:0; padding:0; box-sizing:border-box; }
-        body { background:#0a0a0a; color:#e0e0e0; font-family: system-ui, -apple-system, sans-serif; padding: 20px; }
-        .container { max-width: 1200px; margin: 0 auto; }
-        h1 { font-size: 28px; margin-bottom: 8px; }
-        .sub { color: #888; margin-bottom: 24px; border-left: 3px solid #007bff; padding-left: 12px; }
-        .card { background: #1e1e1e; border-radius: 20px; padding: 20px; margin-bottom: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
-        .card-title { font-size: 18px; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #2c2c2c; padding-bottom: 8px; }
-        .form-row { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; margin-bottom: 20px; }
-        .form-group { flex: 1; min-width: 140px; }
-        .form-group label { display: block; font-size: 12px; color: #aaa; margin-bottom: 6px; }
-        input, select, button { background: #2a2a2a; border: none; border-radius: 12px; padding: 10px 14px; color: white; font-size: 14px; outline: none; }
-        input:focus, select:focus { outline: 1px solid #007bff; }
-        button { background: #007bff; cursor: pointer; transition: 0.2s; font-weight: 500; }
-        button:hover { background: #0056b3; transform: scale(0.98); }
-        button.danger { background: #dc3545; }
-        button.danger:hover { background: #b02a37; }
-        button.secondary { background: #3a3a3a; }
-        button.secondary:hover { background: #4a4a4a; }
-        .code-list { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; font-size: 13px; }
-        th, td { padding: 12px 8px; text-align: left; border-bottom: 1px solid #2c2c2c; }
-        th { color: #aaa; font-weight: 500; }
-        .code-value { font-family: monospace; font-size: 14px; font-weight: 600; color: #ffd966; }
-        .status-active { color: #6fcf97; }
-        .status-expired { color: #e74c3c; }
-        .actions { display: flex; gap: 8px; flex-wrap: wrap; }
-        .actions button { padding: 4px 10px; font-size: 12px; }
-        .toolbar { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; justify-content: space-between; align-items: center; }
-        .export-group { display: flex; gap: 8px; }
-        .note { background: #2a2a2a; border-radius: 12px; padding: 12px; font-size: 12px; color: #bbb; margin-top: 16px; }
-        .note code { background: #0a0a0a; padding: 2px 6px; border-radius: 6px; color: #ffd966; }
-        .verify-result { margin-top: 12px; padding: 8px; border-radius: 8px; font-size: 13px; }
-        .success { background: #1e3a2e; color: #6fcf97; }
-        .error { background: #3a1e1e; color: #e74c3c; }
-        .flex-between { display: flex; justify-content: space-between; align-items: center; }
-        @media (max-width: 700px) {
-            body { padding: 12px; }
-            th, td { padding: 8px 4px; }
-            .form-row { flex-direction: column; align-items: stretch; }
-            .toolbar { flex-direction: column; align-items: stretch; }
-        }
+        body { background:#121212; color:#eee; font-family: system-ui, sans-serif; padding: 16px; }
+        .container { max-width: 700px; margin: 0 auto; }
+        .card { background: #1e1e1e; border-radius: 24px; padding: 20px; margin-bottom: 20px; }
+        h1 { font-size: 24px; margin-bottom: 16px; text-align: center; }
+        .device-box { background: #2a2a2a; border-radius: 16px; padding: 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .device-code { font-family: monospace; font-size: 18px; letter-spacing: 1px; }
+        button { background: #007bff; border: none; color: white; padding: 10px 16px; border-radius: 40px; font-size: 14px; cursor: pointer; transition: 0.2s; }
+        button:active { transform: scale(0.97); }
+        .btn-secondary { background: #3a3a3a; }
+        input, textarea { width: 100%; padding: 12px; background: #2a2a2a; border: none; border-radius: 40px; color: white; font-size: 14px; margin: 8px 0; }
+        textarea { border-radius: 16px; resize: vertical; font-family: monospace; }
+        .error { color: #ff8866; }
+        .success { color: #66cc66; }
+        .sync-panel { margin-top: 20px; display: flex; gap: 12px; flex-wrap: wrap; }
+        .result-area { margin-top: 20px; background: #2a2a2a; border-radius: 16px; padding: 12px; font-family: monospace; white-space: pre-wrap; word-break: break-all; max-height: 400px; overflow-y: auto; }
+        .footer { text-align: center; font-size: 12px; color: #666; margin-top: 24px; }
+        .stats { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 20px; }
+        .stats-col { flex: 1; background: #2a2a2a; border-radius: 16px; padding: 12px; }
+        .rule-row { display: flex; gap: 8px; margin: 8px 0; flex-wrap: wrap; }
+        .rule-row input { flex: 1; margin: 0; }
+        .rule-list { margin-top: 16px; }
+        .hit-rate { background: #1e3a2e; padding: 8px; border-radius: 12px; text-align: center; margin: 12px 0; }
     </style>
 </head>
 <body>
 <div class="container">
-    <h1>🔐 授权码管理生成器（修复版）</h1>
-    <div class="sub">生成、管理、导出授权码，支持验证 Worker 接口</div>
-
-    <!-- 生成区域 -->
     <div class="card">
-        <div class="card-title">✨ 生成新授权码</div>
-        <div class="form-row">
-            <div class="form-group">
-                <label>前缀（可选）</label>
-                <input type="text" id="codePrefix" placeholder="例如 ANT_" style="width: 100%;">
-            </div>
-            <div class="form-group">
-                <label>长度（不含前缀）</label>
-                <input type="number" id="codeLength" value="12" min="6" max="32" step="1">
-            </div>
-            <div class="form-group">
-                <label>有效期（天数）</label>
-                <input type="number" id="expiryDays" value="30" min="1" max="365">
-            </div>
-            <div class="form-group">
-                <label>&nbsp;</label>
-                <button id="generateBtn" style="width: 100%;">➕ 生成授权码</button>
-            </div>
+        <h1>🐜 蚂蚁数据 · AI 盘口统计</h1>
+        <div class="device-box">
+            <span>📱 设备码：</span>
+            <span class="device-code" id="deviceCode">加载中...</span>
+            <button id="copyDeviceBtn" class="btn-secondary">复制</button>
         </div>
-        <div class="form-row">
-            <div class="form-group">
-                <label>自定义授权码（可选）</label>
-                <input type="text" id="customCode" placeholder="直接输入授权码">
+        <input type="password" id="authCodeInput" placeholder="请输入授权码">
+        <button id="verifyBtn">🔓 验证授权</button>
+        <div id="authMessage" style="margin-top: 12px; text-align: center;"></div>
+        
+        <div id="syncPanel" style="display: none;">
+            <div class="sync-panel">
+                <button id="syncDataBtn">📡 同步 G·A / G·B</button>
+                <button id="syncRulesBtn">📜 同步默认规则</button>
             </div>
-            <div class="form-group">
-                <label>自定义过期时间</label>
-                <input type="datetime-local" id="customExpiry">
+            
+            <!-- G·A / G·B 数据区 -->
+            <div class="stats">
+                <div class="stats-col">
+                    <div style="font-weight: bold; margin-bottom: 8px;">G · A 盘口数据</div>
+                    <textarea id="gaData" rows="3" placeholder="同步后自动填充"></textarea>
+                </div>
+                <div class="stats-col">
+                    <div style="font-weight: bold; margin-bottom: 8px;">G · B 盘口数据</div>
+                    <textarea id="gbData" rows="3" placeholder="同步后自动填充"></textarea>
+                </div>
             </div>
-            <div class="form-group">
-                <label>&nbsp;</label>
-                <button id="addCustomBtn" class="secondary" style="width: 100%;">📝 手动添加</button>
+            
+            <!-- 默认规则区 -->
+            <div style="margin-top: 16px;">
+                <div style="font-weight: bold; margin-bottom: 8px;">📜 默认规则（A→B）</div>
+                <textarea id="rulesData" rows="4" placeholder="同步后自动填充"></textarea>
+            </div>
+            
+            <!-- 统计结果区 -->
+            <div id="statsResult" class="result-area" style="margin-top: 16px;">
+                等待同步数据...
             </div>
         </div>
     </div>
-
-    <!-- 管理工具栏 -->
-    <div class="card">
-        <div class="toolbar">
-            <div class="export-group">
-                <button id="exportJsonBtn" class="secondary">📤 导出 JSON</button>
-                <button id="exportCsvBtn" class="secondary">📄 导出 CSV</button>
-                <button id="importBtn" class="secondary">📂 导入 JSON</button>
-                <input type="file" id="importFile" accept=".json" style="display: none;">
-            </div>
-            <div>
-                <button id="clearAllBtn" class="danger">⚠️ 清空所有授权码</button>
-            </div>
-        </div>
-
-        <div class="code-list">
-            <table id="codeTable">
-                <thead>
-                    <tr><th>授权码</th><th>生成时间</th><th>过期时间</th><th>状态</th><th>操作</th></tr>
-                </thead>
-                <tbody id="codeTableBody">
-                    <tr><td colspan="5" style="text-align:center;">暂无授权码，请生成</td></tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <!-- 验证测试区域（调用真实 Worker） -->
-    <div class="card">
-        <div class="card-title">🔍 验证授权码（测试 Worker）</div>
-        <div class="form-row">
-            <div class="form-group" style="flex: 3;">
-                <input type="text" id="testCode" placeholder="输入授权码进行测试">
-            </div>
-            <div class="form-group">
-                <button id="testVerifyBtn">🔎 验证</button>
-            </div>
-        </div>
-        <div id="verifyResult" class="verify-result"></div>
-        <div class="note">
-            💡 说明：验证会请求 <code>https://api.mycm.cc.cd/verify</code> 接口，需要设备码（自动生成）配合。<br>
-            生成的授权码需要<strong>手动添加到 Worker 的环境变量或 KV 中</strong>才能通过验证。<br>
-            修复版已解决 <code>fetchWithTimeout</code> 未定义问题，使用标准 <code>fetch</code> + <code>AbortController</code>。
-        </div>
-    </div>
-
-    <div class="note">
-        📌 <strong>部署指南：</strong><br>
-        1. 使用本工具生成授权码，点击“导出 JSON”获得授权码列表。<br>
-        2. 在 Cloudflare Worker 中，将授权码列表存入环境变量（如 <code>AUTH_CODES</code>）或 KV 命名空间。<br>
-        3. Worker 的验证逻辑需要改为从环境变量/KV 中读取有效授权码。<br>
-        4. 若您的 Worker 当前仅验证请求头中的授权码且无内置列表，请参考下方示例代码修改 Worker 脚本。<br>
-        <br>
-        <strong>Worker 验证代码示例（支持多授权码）：</strong><br>
-        <code style="display:block; white-space:pre-wrap; background:#0a0a0a; padding:8px; border-radius:8px;">
-        const VALID_CODES = ["ANT_XXXXX", "ANT_YYYYY"]; // 从环境变量读取
-        if (!VALID_CODES.includes(authCode)) return new Response(JSON.stringify({valid:false, reason:"invalid auth"}), ...);
-        </code>
+    <div class="footer">
+        © 2026 蚂蚁数据 · <a href="https://t.me/mayi2036" target="_blank" style="color:#888;">Telegram</a>
     </div>
 </div>
 
 <script>
-    // 存储 key
-    const STORAGE_KEY = 'ANT_AUTH_CODES';
+    // ========== Worker 地址 ==========
+    const WORKER_URL = 'https://api.mycm.cc.cd';
+    const STORAGE_KEY = 'ANT_AUTH';
 
-    // 获取存储的授权码列表
-    function getCodes() {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) return [];
-        try {
-            return JSON.parse(raw);
-        } catch(e) { return []; }
-    }
-
-    // 保存授权码列表
-    function saveCodes(codes) {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(codes));
-        renderTable();
-    }
-
-    // 生成随机字符串
-    function randomString(length) {
-        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-        let result = '';
-        for (let i = 0; i < length; i++) {
-            result += chars.charAt(Math.floor(Math.random() * chars.length));
-        }
-        return result;
-    }
-
-    // 生成新授权码
-    function generateCode(prefix, length, expiryDays) {
-        const code = (prefix || '') + randomString(length);
-        const now = new Date();
-        const expireAt = new Date(now.getTime() + expiryDays * 24 * 60 * 60 * 1000);
-        return {
-            code: code,
-            createdAt: now.toISOString(),
-            expiresAt: expireAt.toISOString(),
-            valid: true
-        };
-    }
-
-    // 添加授权码
-    function addCode(code, expiresAtISO) {
-        const codes = getCodes();
-        if (codes.some(c => c.code === code)) {
-            alert('授权码已存在');
-            return false;
-        }
-        codes.push({
-            code: code,
-            createdAt: new Date().toISOString(),
-            expiresAt: expiresAtISO,
-            valid: true
-        });
-        saveCodes(codes);
-        return true;
-    }
-
-    // 删除授权码
-    function deleteCode(index) {
-        const codes = getCodes();
-        codes.splice(index, 1);
-        saveCodes(codes);
-    }
-    window.deleteCode = deleteCode;
-
-    // 清空所有
-    function clearAll() {
-        if (confirm('⚠️ 确定要删除所有授权码吗？不可恢复！')) {
-            saveCodes([]);
-        }
-    }
-
-    // 检查是否过期
-    function isExpired(expiresAt) {
-        return new Date(expiresAt) < new Date();
-    }
-
-    // 渲染表格
-    function renderTable() {
-        const codes = getCodes();
-        const tbody = document.getElementById('codeTableBody');
-        if (!codes.length) {
-            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">暂无授权码，请生成</td></tr>';
-            return;
-        }
-        let html = '';
-        codes.forEach((item, idx) => {
-            const expired = isExpired(item.expiresAt);
-            const statusClass = expired ? 'status-expired' : 'status-active';
-            const statusText = expired ? '已过期' : '有效';
-            const createdAt = new Date(item.createdAt).toLocaleString();
-            const expiresAt = new Date(item.expiresAt).toLocaleString();
-            html += `<tr>
-                <td class="code-value">${escapeHtml(item.code)}</td>
-                <td>${createdAt}</td>
-                <td>${expiresAt}</td>
-                <td class="${statusClass}">${statusText}</td>
-                <td class="actions">
-                    <button class="secondary" onclick="copyCode('${escapeHtml(item.code)}')">📋 复制</button>
-                    <button class="danger" onclick="deleteCode(${idx})">🗑 删除</button>
-                </td>
-            </tr>`;
-        });
-        tbody.innerHTML = html;
-    }
-
-    function escapeHtml(str) {
-        return str.replace(/[&<>]/g, function(m) {
-            if (m === '&') return '&amp;';
-            if (m === '<') return '&lt;';
-            if (m === '>') return '&gt;';
-            return m;
-        });
-    }
-
-    // 复制到剪贴板
-    async function copyCode(text) {
-        try {
-            await navigator.clipboard.writeText(text);
-            alert('已复制：' + text);
-        } catch(e) {
-            const textarea = document.createElement('textarea');
-            textarea.value = text;
-            document.body.appendChild(textarea);
-            textarea.select();
-            document.execCommand('copy');
-            document.body.removeChild(textarea);
-            alert('已复制：' + text);
-        }
-    }
-    window.copyCode = copyCode;
-
-    // 导出 JSON
-    function exportJSON() {
-        const codes = getCodes();
-        const dataStr = JSON.stringify(codes, null, 2);
-        const blob = new Blob([dataStr], {type: 'application/json'});
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `ant_auth_codes_${new Date().toISOString().slice(0,19)}.json`;
-        a.click();
-        URL.revokeObjectURL(url);
-    }
-
-    // 导出 CSV
-    function exportCSV() {
-        const codes = getCodes();
-        const headers = ['授权码','生成时间','过期时间','状态'];
-        const rows = codes.map(c => [
-            c.code,
-            new Date(c.createdAt).toLocaleString(),
-            new Date(c.expiresAt).toLocaleString(),
-            isExpired(c.expiresAt) ? '已过期' : '有效'
-        ]);
-        const csvContent = [headers, ...rows].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
-        const blob = new Blob(["\uFEFF" + csvContent], {type: 'text/csv;charset=utf-8;'});
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `ant_auth_codes_${new Date().toISOString().slice(0,19)}.csv`;
-        a.click();
-        URL.revokeObjectURL(url);
-    }
-
-    // 导入 JSON
-    function importJSON(file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                const imported = JSON.parse(e.target.result);
-                if (Array.isArray(imported)) {
-                    let newCodes = [...getCodes()];
-                    imported.forEach(item => {
-                        if (item.code && !newCodes.some(c => c.code === item.code)) {
-                            newCodes.push({
-                                code: item.code,
-                                createdAt: item.createdAt || new Date().toISOString(),
-                                expiresAt: item.expiresAt || new Date(Date.now() + 30*86400000).toISOString(),
-                                valid: true
-                            });
-                        }
-                    });
-                    saveCodes(newCodes);
-                    alert(`导入成功，新增 ${imported.length} 条`);
-                } else {
-                    alert('JSON 格式错误，需要数组');
-                }
-            } catch(err) {
-                alert('解析 JSON 失败：' + err.message);
-            }
-        };
-        reader.readAsText(file, 'UTF-8');
-    }
-
-    // 获取设备UUID（与主工具一致）
+    // ========== 设备码（永久 UUID） ==========
     function getDeviceUUID() {
         let uuid = localStorage.getItem('ANT_DEVICE_UUID');
         if (!uuid) {
@@ -360,80 +96,263 @@
         }
         return uuid;
     }
+    document.getElementById('deviceCode').innerText = getDeviceUUID();
+    document.getElementById('copyDeviceBtn').onclick = () => {
+        navigator.clipboard.writeText(getDeviceUUID());
+        alert('设备码已复制');
+    };
 
-    // 测试验证（修复版：使用原生 fetch + 超时）
-    async function testVerify(code) {
-        const resultDiv = document.getElementById('verifyResult');
-        resultDiv.innerHTML = '⏳ 验证中...';
-        resultDiv.className = 'verify-result';
-        const deviceCode = getDeviceUUID();
+    // ========== 带超时的 fetch ==========
+    async function fetchWithTimeout(url, options = {}, timeout = 10000) {
+        const controller = new AbortController();
+        const id = setTimeout(() => controller.abort(), timeout);
         try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 10000);
-            const resp = await fetch('https://api.mycm.cc.cd/verify', {
-                method: 'GET',
-                headers: {
-                    'X-Device-Code': deviceCode,
-                    'X-Auth-Code': code
-                },
-                signal: controller.signal
-            });
-            clearTimeout(timeoutId);
-            const data = await resp.json();
-            if (data.valid === true) {
-                resultDiv.innerHTML = `✅ 验证通过！授权码 ${code} 有效。`;
-                resultDiv.classList.add('success');
-            } else {
-                resultDiv.innerHTML = `❌ 验证失败：${data.reason || '无效授权码'}<br>注意：Worker 需要配置该授权码才能通过验证。`;
-                resultDiv.classList.add('error');
-            }
+            const response = await fetch(url, { ...options, signal: controller.signal });
+            clearTimeout(id);
+            return response;
         } catch (err) {
-            let errorMsg = err.message;
-            if (err.name === 'AbortError') errorMsg = '请求超时（10秒）';
-            resultDiv.innerHTML = `⚠️ 请求失败：${errorMsg}<br>请确保网络正常且 Worker 可访问，并检查 CORS 配置。`;
-            resultDiv.classList.add('error');
+            clearTimeout(id);
+            throw err;
         }
     }
 
-    // 事件绑定
-    document.getElementById('generateBtn').onclick = () => {
-        const prefix = document.getElementById('codePrefix').value;
-        const length = parseInt(document.getElementById('codeLength').value, 10);
-        const days = parseInt(document.getElementById('expiryDays').value, 10);
-        if (isNaN(length) || length < 1) { alert('长度无效'); return; }
-        const newCode = generateCode(prefix, length, days);
-        addCode(newCode.code, newCode.expiresAt);
-    };
-    document.getElementById('addCustomBtn').onclick = () => {
-        const customCode = document.getElementById('customCode').value.trim();
-        let expiryStr = document.getElementById('customExpiry').value;
-        if (!customCode) { alert('请输入授权码'); return; }
-        let expiresAt;
-        if (expiryStr) {
-            expiresAt = new Date(expiryStr).toISOString();
-        } else {
-            expiresAt = new Date(Date.now() + 30*86400000).toISOString();
+    // ========== 验证授权 ==========
+    async function verifyAuth(authCode) {
+        if (!authCode) return false;
+        const device = getDeviceUUID();
+        try {
+            const resp = await fetchWithTimeout(`${WORKER_URL}/verify`, {
+                method: 'GET',
+                headers: {
+                    'X-Device-Code': device,
+                    'X-Auth-Code': authCode
+                }
+            }, 10000);
+            const data = await resp.json();
+            return data.valid === true;
+        } catch (err) {
+            console.error(err);
+            return false;
         }
-        addCode(customCode, expiresAt);
-        document.getElementById('customCode').value = '';
-        document.getElementById('customExpiry').value = '';
-    };
-    document.getElementById('exportJsonBtn').onclick = exportJSON;
-    document.getElementById('exportCsvBtn').onclick = exportCSV;
-    document.getElementById('importBtn').onclick = () => document.getElementById('importFile').click();
-    document.getElementById('importFile').onchange = (e) => {
-        if (e.target.files.length) importJSON(e.target.files[0]);
-        e.target.value = '';
-    };
-    document.getElementById('clearAllBtn').onclick = clearAll;
-    document.getElementById('testVerifyBtn').onclick = () => {
-        const code = document.getElementById('testCode').value.trim();
-        if (!code) { alert('请输入授权码'); return; }
-        testVerify(code);
+    }
+
+    const verifyBtn = document.getElementById('verifyBtn');
+    const authInput = document.getElementById('authCodeInput');
+    const authMsg = document.getElementById('authMessage');
+    const syncPanel = document.getElementById('syncPanel');
+
+    verifyBtn.onclick = async () => {
+        const authCode = authInput.value.trim();
+        if (!authCode) {
+            authMsg.innerHTML = '<span class="error">❌ 请输入授权码</span>';
+            return;
+        }
+        authMsg.innerHTML = '⏳ 验证中...';
+        const valid = await verifyAuth(authCode);
+        if (valid) {
+            localStorage.setItem(STORAGE_KEY, authCode);
+            authMsg.innerHTML = '<span class="success">✅ 授权成功！可以同步数据了</span>';
+            syncPanel.style.display = 'block';
+            // 自动加载上次保存的数据
+            loadSavedData();
+        } else {
+            authMsg.innerHTML = '<span class="error">❌ 授权码无效或已过期，请联系 @mayiya_bot</span>';
+            syncPanel.style.display = 'none';
+        }
     };
 
-    // 初始渲染
-    renderTable();
+    // ========== 通用同步函数 ==========
+    async function sync(endpoint, targetId, successMsg) {
+        const authCode = localStorage.getItem(STORAGE_KEY);
+        if (!authCode) {
+            alert('请先验证授权');
+            return;
+        }
+        const device = getDeviceUUID();
+        const targetElem = document.getElementById(targetId);
+        if (targetElem) targetElem.value = '⏳ 请求中...';
+        try {
+            const resp = await fetchWithTimeout(`${WORKER_URL}/${endpoint}`, {
+                headers: {
+                    'X-Device-Code': device,
+                    'X-Auth-Code': authCode
+                }
+            }, 15000);
+            if (resp.status === 401) {
+                alert('授权已失效，请重新验证');
+                localStorage.removeItem(STORAGE_KEY);
+                syncPanel.style.display = 'none';
+                return;
+            }
+            const text = await resp.text();
+            if (endpoint === 'sync') {
+                // 解析 GA 和 GB（取前两个有效数字行）
+                const lines = text.split(/\r?\n/).filter(l => l.trim() && /\d/.test(l));
+                let ga = '', gb = '';
+                for (let line of lines) {
+                    const nums = line.match(/\b([1-9]|[1-4][0-9]|49)\b/g);
+                    if (nums && nums.length) {
+                        if (!ga) ga = nums.join(' ');
+                        else if (!gb) { gb = nums.join(' '); break; }
+                    }
+                }
+                document.getElementById('gaData').value = ga || '无数据';
+                document.getElementById('gbData').value = gb || '无数据';
+                localStorage.setItem('saved_ga', ga);
+                localStorage.setItem('saved_gb', gb);
+                // 同步后自动统计
+                calculateStats();
+            } else if (endpoint === 'rules') {
+                targetElem.value = text;
+                localStorage.setItem('saved_rules', text);
+            }
+            alert(successMsg);
+        } catch (err) {
+            if (targetElem) targetElem.value = '同步失败：' + err.message;
+            alert('同步失败：' + err.message);
+        }
+    }
+
+    document.getElementById('syncDataBtn').onclick = () => sync('sync', 'gaData', '数据同步完成');
+    document.getElementById('syncRulesBtn').onclick = () => sync('rules', 'rulesData', '规则同步完成');
+
+    // 保存/加载本地数据
+    function loadSavedData() {
+        const ga = localStorage.getItem('saved_ga');
+        const gb = localStorage.getItem('saved_gb');
+        const rules = localStorage.getItem('saved_rules');
+        if (ga) document.getElementById('gaData').value = ga;
+        if (gb) document.getElementById('gbData').value = gb;
+        if (rules) document.getElementById('rulesData').value = rules;
+        if (ga && gb) calculateStats();
+    }
+
+    // ========== 统计功能（简化版，展示核心命中率） ==========
+    function parseNumbers(str) {
+        const matches = str.match(/\b([1-9]|[1-4][0-9]|49)\b/g);
+        return matches ? matches.map(Number) : [];
+    }
+
+    function rangeToNumbers(range) {
+        range = range.trim();
+        if (!range) return [];
+        if (range.includes('-')) {
+            let [s, e] = range.split('-').map(Number);
+            if (isNaN(s) || isNaN(e)) return [];
+            if (s > e) [s, e] = [e, s];
+            let arr = [];
+            for (let i = s; i <= e; i++) arr.push(i);
+            return arr;
+        }
+        let n = parseInt(range);
+        return isNaN(n) ? [] : [n];
+    }
+
+    function calculateStats() {
+        const gaText = document.getElementById('gaData').value;
+        const gbText = document.getElementById('gbData').value;
+        const rulesText = document.getElementById('rulesData').value;
+        
+        const gaNums = parseNumbers(gaText);
+        const gbNums = parseNumbers(gbText);
+        
+        if (gaNums.length === 0 || gbNums.length === 0) {
+            document.getElementById('statsResult').innerHTML = '请先同步 G·A 和 G·B 数据';
+            return;
+        }
+        
+        // 构建频次统计
+        const gaCount = new Array(50).fill(0);
+        const gbCount = new Array(50).fill(0);
+        gaNums.forEach(n => gaCount[n]++);
+        gbNums.forEach(n => gbCount[n]++);
+        
+        // 解析规则
+        const rules = [];
+        const lines = rulesText.split(/\r?\n/);
+        for (let line of lines) {
+            line = line.trim();
+            if (!line) continue;
+            let arrow = line.match(/(.+?)(?:→|➔|=>|->)(.+)/);
+            let aStr, bStr;
+            if (arrow) { aStr = arrow[1].trim(); bStr = arrow[2].trim(); }
+            else { let parts = line.split(/\s+/); if (parts.length >= 2) { aStr = parts[0]; bStr = parts[1]; } }
+            if (aStr && bStr) rules.push({ a: aStr, b: bStr });
+        }
+        
+        // 计算所有可能组合
+        let totalCombos = 0, hitCombos = 0;
+        for (let a = 0; a <= 9; a++) {
+            const aVals = rangeToNumbers(a.toString());
+            if (aVals.length === 0) continue;
+            for (let b = 0; b <= 9; b++) {
+                const bVals = rangeToNumbers(b.toString());
+                if (bVals.length === 0) continue;
+                totalCombos++;
+                let matched = false;
+                for (let rule of rules) {
+                    const ruleAVals = rangeToNumbers(rule.a);
+                    const ruleBVals = rangeToNumbers(rule.b);
+                    if (ruleAVals.includes(a) && ruleBVals.includes(b)) {
+                        matched = true;
+                        break;
+                    }
+                }
+                if (matched) hitCombos++;
+            }
+        }
+        
+        const hitRate = totalCombos > 0 ? (hitCombos / totalCombos * 100).toFixed(2) : 0;
+        
+        // 找出高频数字
+        let maxGa = Math.max(...gaCount);
+        let maxGb = Math.max(...gbCount);
+        let hotGa = [];
+        let hotGb = [];
+        for (let i = 1; i <= 49; i++) {
+            if (gaCount[i] === maxGa && maxGa > 0) hotGa.push(i);
+            if (gbCount[i] === maxGb && maxGb > 0) hotGb.push(i);
+        }
+        
+        const html = `
+            <div class="hit-rate">🎯 命中概率：${hitCombos} / ${totalCombos} = ${hitRate}%</div>
+            <div><strong>📊 G·A 高频数字（${maxGa}次）</strong>：${hotGa.join(', ') || '无'}</div>
+            <div style="margin-top: 8px;"><strong>📊 G·B 高频数字（${maxGb}次）</strong>：${hotGb.join(', ') || '无'}</div>
+            <div style="margin-top: 12px; font-size: 12px; color: #aaa;">✅ 已同步 ${gaNums.length} 个 G·A 数字，${gbNums.length} 个 G·B 数字</div>
+        `;
+        document.getElementById('statsResult').innerHTML = html;
+    }
+
+    // 当 GA/GB 内容改变时自动统计
+    document.getElementById('gaData').addEventListener('input', () => {
+        localStorage.setItem('saved_ga', document.getElementById('gaData').value);
+        calculateStats();
+    });
+    document.getElementById('gbData').addEventListener('input', () => {
+        localStorage.setItem('saved_gb', document.getElementById('gbData').value);
+        calculateStats();
+    });
+    document.getElementById('rulesData').addEventListener('input', () => {
+        localStorage.setItem('saved_rules', document.getElementById('rulesData').value);
+        calculateStats();
+    });
+
+    // 页面加载时检查本地授权
+    (async () => {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+            const valid = await verifyAuth(saved);
+            if (valid) {
+                authMsg.innerHTML = '<span class="success">✅ 已有有效授权，可直接同步</span>';
+                syncPanel.style.display = 'block';
+                authInput.value = saved;
+                loadSavedData();
+            } else {
+                localStorage.removeItem(STORAGE_KEY);
+                authMsg.innerHTML = '<span class="error">⚠️ 本地授权已过期，请重新输入</span>';
+            }
+        }
+    })();
 </script>
 </body>
 </html>
