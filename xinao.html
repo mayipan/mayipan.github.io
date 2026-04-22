@@ -30,15 +30,14 @@
         .flex-between { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-top:12px; font-size:13px; }
         .filter-row { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:12px; }
         .filter-row input { background:#0d0d0d; border:1px solid #2c2c2c; border-radius:40px; padding:6px 12px; color:#e0e0e0; width:90px; text-align:center; }
-        /* 表格对齐优化 */
         .freq-table { width:100%; border-collapse:collapse; margin-top:8px; font-size:12px; table-layout:fixed; }
         .freq-table th, .freq-table td { padding:8px 4px; text-align:center; border-bottom:1px solid #2c2c2c; vertical-align:middle; word-break:keep-all; }
-        .freq-table th:nth-child(1) { width:12%; }  /* 复选框 */
-        .freq-table th:nth-child(2) { width:10%; }  /* 排名 */
-        .freq-table th:nth-child(3) { width:20%; }  /* 特码 */
-        .freq-table th:nth-child(4) { width:15%; }  /* 频次 */
-        .freq-table th:nth-child(5) { width:15%; }  /* 近期 */
-        .freq-table th:nth-child(6) { width:28%; }  /* 热度值 */
+        .freq-table th:nth-child(1) { width:12%; }
+        .freq-table th:nth-child(2) { width:10%; }
+        .freq-table th:nth-child(3) { width:20%; }
+        .freq-table th:nth-child(4) { width:15%; }
+        .freq-table th:nth-child(5) { width:15%; }
+        .freq-table th:nth-child(6) { width:28%; }
         .checkbox-col { text-align:center; }
         .rule-caption { background:#0d0d0d; border-radius:12px; padding:6px 12px; margin-bottom:12px; color:#4ade80; font-size:12px; text-align:center; cursor:text; outline:none; transition:background 0.1s; }
         .rule-caption:hover { background:#1a1a1a; }
@@ -445,7 +444,6 @@
         let freqRecent = countRecentFrequency(currentDisplayRecords);
         document.getElementById('totalPeriods').innerText = allRecords.length;
 
-        // 号码表格 - 标准闭合，列宽由CSS控制
         let sortedNumbers = getSortedNumbersAll(freqTotal, freqRecent);
         let tableHtml = `<table class="freq-table">
             <thead>
@@ -470,13 +468,11 @@
         tableHtml += `</tbody></table>`;
         document.getElementById('freqTable').innerHTML = tableHtml;
 
-        // 遗漏号码
         let miss = [];
         for(let i=1;i<=49;i++) if(freqTotal[i]===0) miss.push(i);
         let missHtml = miss.length ? `<div class="miss-title">遗漏 ${miss.length}个</div><div>${miss.map(n=>n.toString().padStart(2,'0')).join(', ')}</div>` : '<div>✅全出现</div>';
         document.getElementById('missNumbers').innerHTML = missHtml;
 
-        // 生肖排名表格
         let zodiacTotal = countZodiacs(currentDisplayRecords);
         let zodiacRecent = countRecentZodiacs(currentDisplayRecords);
         let totalZod = currentDisplayRecords.reduce((s,r)=>s+r.zodiacs.length,0);
@@ -503,7 +499,6 @@
         rankHtml += `</tbody></table>`;
         document.getElementById('zodiacRankingContainer').innerHTML = rankHtml;
 
-        // 重新绑定复选框事件，保持全选同步
         const numCheckboxes = document.querySelectorAll('.num-checkbox');
         const zodiacCheckboxes = document.querySelectorAll('.zodiac-checkbox');
         const selectAllNum = document.getElementById('selectAllCheckbox');
@@ -531,7 +526,6 @@
         renderAll();
     }
 
-    // ========== 增强复制函数（按表格排名顺序） ==========
     async function copyToClipboard(text, successMsg) {
         if (!text || text.length === 0) {
             showToast('没有可复制的内容');
@@ -570,7 +564,6 @@
         }
     }
 
-    // 复制号码 —— 严格按照表格中的排名顺序（即DOM顺序）
     function copySelectedNumbers() {
         let checkedCheckboxes = document.querySelectorAll('.num-checkbox:checked');
         if (checkedCheckboxes.length === 0) {
@@ -611,8 +604,8 @@
         setTimeout(()=>t.remove(), 2000);
     }
 
-    // ================== 在线采集功能 ==================
-    const DATA_API_URL = 'lottery_data_api.html?format=text';
+    // ================== 在线采集功能（已修改为新的URL） ==================
+    const DATA_API_URL = 'https://mayipan.eu.cc/lottery_data_api.html';
 
     async function onlineCollect() {
         const btn = document.getElementById('onlineCollectBtn');
@@ -620,7 +613,7 @@
         btn.innerText = '⏳ 采集中...';
         btn.disabled = true;
         try {
-            const url = DATA_API_URL + '&t=' + Date.now();
+            const url = DATA_API_URL + '?t=' + Date.now();
             const response = await fetch(url, { cache: 'no-cache' });
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
             const dataText = await response.text();
