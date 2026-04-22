@@ -3,24 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>授权管理 · 一机一码</title>
+    <title>授权管理 · 一机一码（支持有效期）</title>
     <style>
-        body { background:#0a0a0a; color:#eee; font-family: system-ui; padding: 20px; max-width: 900px; margin: auto; }
+        body { background:#0a0a0a; color:#eee; font-family: system-ui; padding: 20px; max-width: 1000px; margin: auto; }
         .card { background: #1e1e1e; border-radius: 20px; padding: 20px; margin-bottom: 20px; }
         button { background: #007bff; border: none; color: white; padding: 8px 16px; border-radius: 40px; cursor: pointer; margin-right: 8px; margin-top: 8px; }
-        input, textarea { background: #2a2a2a; border: none; padding: 10px; border-radius: 40px; color: white; width: 100%; margin: 8px 0; }
+        input, select { background: #2a2a2a; border: none; padding: 10px; border-radius: 40px; color: white; width: 100%; margin: 8px 0; }
         .success { color: #6fcf97; }
         .error { color: #e74c3c; }
+        .warning { color: #f39c12; }
         table { width: 100%; border-collapse: collapse; margin-top: 16px; }
         th, td { text-align: left; padding: 8px; border-bottom: 1px solid #333; word-break: break-all; }
         code { background: #0a0a0a; padding: 2px 6px; border-radius: 6px; }
         .flex { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
-        .flex input { flex: 1; }
+        .flex input, .flex select { flex: 1; }
+        .expired { color: #e74c3c; }
+        .valid { color: #6fcf97; }
     </style>
 </head>
 <body>
 <div class="card">
-    <h2>🔐 一机一码 · 授权绑定管理</h2>
+    <h2>🔐 一机一码 · 授权绑定管理（支持有效期）</h2>
     <div>
         <label>Worker 地址：</label>
         <input type="text" id="workerUrl" placeholder="https://api.mycm.cc.cd" value="https://api.mycm.cc.cd">
@@ -31,6 +34,14 @@
     <div class="flex">
         <input type="text" id="deviceCode" placeholder="用户设备码 (UUID)">
         <input type="text" id="authCode" placeholder="授权码 (可手动输入)">
+        <select id="expireDaysSelect">
+            <option value="0">永久有效</option>
+            <option value="1">1 天</option>
+            <option value="7">7 天</option>
+            <option value="30">30 天</option>
+            <option value="90">90 天</option>
+            <option value="365">365 天</option>
+        </select>
         <button id="generateAuthBtn">🎲 生成随机码</button>
         <button id="bindBtn">🔗 绑定</button>
     </div>
@@ -49,8 +60,8 @@
     </div>
     <div style="overflow-x: auto;">
         <table id="bindTable">
-            <thead><tr><th>设备码</th><th>授权码</th><th>操作</th></tr></thead>
-            <tbody><tr><td colspan="3" style="text-align:center;">点击刷新按钮加载列表</td></tr>
+            <thead><tr><th>设备码</th><th>授权码</th><th>过期时间</th><th>状态</th><th>操作</th></tr></thead>
+            <tbody><tr><td colspan="5" style="text-align:center;">点击刷新按钮加载列表</td></tr>
         </table>
     </div>
 </div>
@@ -93,17 +104,33 @@
         }
     }
 
+    function formatExpireTime(expireAt) {
+        if (!expireAt) return '永久';
+        const date = new Date(expireAt);
+        return date.toLocaleString();
+    }
+
+    function isExpired(expireAt) {
+        if (!expireAt) return false;
+        return Date.now() > expireAt;
+    }
+
     function renderTable() {
         const tbody = document.querySelector('#bindTable tbody');
         if (!currentBindings.length) {
-            tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">暂无绑定</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">暂无绑定</td></tr>';
             return;
         }
         let html = '';
         for (const b of currentBindings) {
+            const expired = isExpired(b.expireAt);
+            const statusClass = expired ? 'expired' : 'valid';
+            const statusText = expired ? '已过期' : (b.expireAt ? '有效' : '永久有效');
             html += `<tr>
                 <td><code>${escapeHtml(b.deviceCode)}</code></td>
                 <td><code>${escapeHtml(b.authCode)}</code></td>
+                <td>${formatExpireTime(b.expireAt)}</td>
+                <td class="${statusClass}">${statusText}</td>
                 <td><button onclick="unbind('${escapeHtml(b.deviceCode)}')">解除绑定</button></td>
             </tr>`;
         }
@@ -121,19 +148,21 @@
         }
     };
 
-    async function bindDevice(deviceCode, authCode) {
-        await apiCall('/admin/bind', 'POST', { deviceCode, authCode });
+    async function bindDevice(deviceCode, authCode, expireDays) {
+        await apiCall('/admin/bind', 'POST', { deviceCode, authCode, expireDays });
     }
 
     document.getElementById('bindBtn').onclick = async () => {
         const deviceCode = document.getElementById('deviceCode').value.trim();
         let authCode = document.getElementById('authCode').value.trim();
+        const expireDays = parseInt(document.getElementById('expireDaysSelect').value, 10);
         if (!deviceCode) { showMessage('请填写设备码', 'error'); return; }
         if (!authCode) { authCode = generateRandomCode(); document.getElementById('authCode').value = authCode; }
         showMessage('⏳ 绑定中...', '');
         try {
-            await bindDevice(deviceCode, authCode);
-            showMessage(`✅ 绑定成功：${deviceCode} → ${authCode}`, 'success');
+            await bindDevice(deviceCode, authCode, expireDays || null);
+            const expireMsg = expireDays ? `${expireDays} 天后过期` : '永久有效';
+            showMessage(`✅ 绑定成功：${deviceCode} → ${authCode} (${expireMsg})`, 'success');
             document.getElementById('deviceCode').value = '';
             document.getElementById('authCode').value = '';
             await loadBindings();
@@ -173,7 +202,8 @@
                 showMessage(`正在导入 ${imported.length} 条记录...`, '');
                 for (const item of imported) {
                     if (item.deviceCode && item.authCode) {
-                        await bindDevice(item.deviceCode, item.authCode);
+                        const expireDays = item.expireAt ? Math.ceil((item.expireAt - Date.now()) / 86400000) : 0;
+                        await bindDevice(item.deviceCode, item.authCode, expireDays > 0 ? expireDays : null);
                     }
                 }
                 await loadBindings();
