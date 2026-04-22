@@ -283,6 +283,9 @@
     let minMax = { min: 0, max: 0 };
     let groupLines = "";
 
+    // 本地存储的键名
+    const STORAGE_INPUT_KEY = "ant_zodiac_input";
+
     // 辅助函数
     const padZero = n => n.toString().padStart(2, '0');
     const getZodiac = n => zodiacList[(n - 1) % 12];
@@ -307,7 +310,6 @@
         }
         const tip = document.getElementById(tipId);
         if (!tip) {
-            // 降级处理
             navigator.clipboard.writeText(text).catch(() => alert('复制失败，请手动复制'));
             return;
         }
@@ -355,6 +357,7 @@
         if (!nums.length) return;
         el.value = shuffleArray(nums).map(padZero).join(' ');
         autoCalculate();
+        saveInputToLocal(); // 保存
     }
 
     // 去重
@@ -364,6 +367,7 @@
         nums = [...new Set(nums)];
         el.value = nums.map(padZero).join(' ');
         autoCalculate();
+        saveInputToLocal();
     }
 
     // 排序
@@ -373,6 +377,7 @@
         nums.sort((a, b) => a - b);
         el.value = nums.map(padZero).join(' ');
         autoCalculate();
+        saveInputToLocal();
     }
 
     // 更新输入计数提示
@@ -391,7 +396,7 @@
         });
     }
 
-    // 清空所有
+    // 清空所有（同时清除本地存储）
     function clearAll() {
         document.getElementById('numInput1').value = '';
         ['baseResult', 'groupResult', 'zodiacResult'].forEach(id => {
@@ -403,6 +408,8 @@
         groupLines = '';
         showInputInfo();
         showResult(false);
+        // 清空本地存储
+        localStorage.removeItem(STORAGE_INPUT_KEY);
     }
 
     // 渲染基础统计
@@ -529,6 +536,19 @@
         calculate();
     }
 
+    // ==================== 本地存储自动保存与恢复 ====================
+    function saveInputToLocal() {
+        const inputVal = document.getElementById('numInput1').value;
+        localStorage.setItem(STORAGE_INPUT_KEY, inputVal);
+    }
+
+    function loadInputFromLocal() {
+        const saved = localStorage.getItem(STORAGE_INPUT_KEY);
+        if (saved !== null && saved !== undefined) {
+            document.getElementById('numInput1').value = saved;
+        }
+    }
+
     // ==================== 手动同步功能（从远程API拉取数据） ====================
     async function syncFromAPI() {
         const apiUrl = 'https://mayipan.eu.cc/antdata.html';
@@ -553,6 +573,7 @@
             const inputEl = document.getElementById('numInput1');
             inputEl.value = numbers.join(' ');
             autoCalculate();
+            saveInputToLocal(); // 同步后保存
             if (btnTitle) btnTitle.innerHTML = originalText;
             // 显示成功提示
             const tip = document.getElementById('inputTip1');
@@ -564,13 +585,17 @@
         }
     }
 
-    // 页面启动，无需任何授权
+    // 页面启动：加载保存的内容，然后计算
     window.onload = function() {
+        loadInputFromLocal();
         autoCalculate();
+        // 监听输入变化，实时保存
+        const textarea = document.getElementById('numInput1');
+        textarea.addEventListener('input', function() {
+            autoCalculate();
+            saveInputToLocal();
+        });
     };
-
-    // 监听输入变化
-    document.getElementById('numInput1').addEventListener('input', autoCalculate);
 </script>
 </body>
 </html>
