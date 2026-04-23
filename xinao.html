@@ -7,13 +7,20 @@
     <style>
         * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
         body { background:#121212; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, sans-serif; padding:12px; color:#e0e0e0; font-size:14px; max-width:800px; margin:0 auto; }
+        /* 授权面板 */
         .auth-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.92); backdrop-filter:blur(8px); z-index:10000; display:flex; align-items:center; justify-content:center; font-family:inherit; }
         .auth-card { background:#1e1e1e; border-radius:32px; padding:28px 24px; width:90%; max-width:420px; border:1px solid #4f46e5; box-shadow:0 20px 35px rgba(0,0,0,0.6); text-align:center; }
-        .auth-card h2 { margin-bottom:16px; color:#facc15; }
-        .auth-card input { width:100%; background:#0d0d0d; border:1px solid #2c2c2c; border-radius:40px; padding:12px 16px; color:#e0e0e0; font-size:14px; text-align:center; margin:12px 0; outline:none; }
-        .auth-card button { background:#4f46e5; width:100%; padding:10px; border-radius:40px; font-weight:bold; margin-top:8px; cursor:pointer; }
+        .auth-card h2 { margin-bottom:16px; color:#facc15; font-size:1.5rem; }
+        .auth-card input { width:100%; background:#0d0d0d; border:1px solid #2c2c2c; border-radius:40px; padding:12px 16px; color:#e0e0e0; font-size:14px; text-align:center; margin:12px 0; outline:none; box-sizing:border-box; }
+        .auth-card button { background:#4f46e5; width:100%; padding:10px; border-radius:40px; font-weight:bold; margin-top:8px; cursor:pointer; border:none; color:white; font-size:14px; transition:0.2s; }
+        .auth-card button:hover { opacity:0.9; transform:scale(0.98); }
         .auth-card .info-text { font-size:12px; color:#aaa; margin-top:12px; }
-        .device-id { background:#0a0a0a; padding:8px; border-radius:20px; font-family:monospace; font-size:11px; word-break:break-all; margin:8px 0; }
+        /* 设备码行 */
+        .device-id-row { background:#0a0a0a; border-radius:20px; padding:8px 12px; margin:8px 0; display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; }
+        .device-id-row span { font-family:monospace; font-size:11px; word-break:break-all; color:#eee; flex:1; text-align:left; }
+        .copy-device-btn { background:#3a3a3a; padding:6px 12px; border-radius:20px; font-size:12px; cursor:pointer; border:none; color:#fff; width:auto; margin:0; white-space:nowrap; }
+        .copy-device-btn:hover { background:#007bff; }
+        /* 其他样式（原业务样式保持不变） */
         .card { background:#1e1e1e; border-radius:20px; padding:16px; margin-bottom:16px; border:1px solid #2c2c2c; }
         .card-header { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid #2c2c2c; }
         .card-header h3 { margin:0; font-size:1rem; font-weight:600; color:#aaa; }
@@ -24,8 +31,6 @@
         .sub { color:#777; margin-bottom:16px; font-size:0.7rem; border-left:3px solid #4f46e5; padding-left:10px; }
         button { background:#2a2a2a; border:none; padding:8px 16px; border-radius:40px; font-weight:500; color:#e0e0e0; cursor:pointer; transition:0.2s; font-size:13px; }
         button.primary { background:#4f46e5; color:white; }
-        button.warning { background:#f97316; color:white; }
-        button.danger { background:#dc2626; color:white; }
         button.success { background:#10b981; color:white; }
         .flex-between { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-top:12px; font-size:13px; }
         .filter-row { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:12px; }
@@ -62,15 +67,17 @@
     </style>
 </head>
 <body>
-<div id="authPanel" class="auth-overlay" style="display: flex;">
+<div id="authPanel" class="auth-overlay" style="display: none;">
     <div class="auth-card">
         <h2>🔐 授权验证</h2>
-        <div class="device-id" id="deviceIdDisplay"></div>
-        <div class="info-text">每台设备仅可试用1天，过期后需授权码</div>
-        <input type="text" id="authCodeInput" placeholder="请输入授权码">
+        <div class="device-id-row">
+            <span id="deviceIdDisplay"></span>
+            <button class="copy-device-btn" id="copyDeviceBtn">📋 复制</button>
+        </div>
+        <div class="info-text">设备码已生成，请联系管理员获取授权码</div>
+        <input type="password" id="authCodeInput" placeholder="请输入授权码">
         <button id="verifyBtn" class="primary">验证授权</button>
-        <div class="info-text" id="authStatusMsg">未授权，请验证或试用</div>
-        <button id="trialBtn" style="background:#2a2a2a; margin-top: 12px;">📅 试用1天（仅一次）</button>
+        <div class="info-text" id="authStatusMsg"></div>
         <div class="info-text" style="margin-top: 16px; border-top: 1px solid #333; padding-top: 12px;">
             📞 获取授权码请联系：<br>
             ✈️ 电报：mayi2036（备注：六合彩）
@@ -82,7 +89,7 @@
 <div class="container">
     <div class="card">
         <h1>🔴 新澳门渗透采集</h1>
-        <div class="sub">每天自动渗透采集最新新澳门盘口数据 ”</div>
+        <div class="sub">每天自动渗透采集最新新澳门盘口数据</div>
         <div id="licenseInfo" style="background:#0d0d0d; border-radius: 30px; padding: 6px 12px; margin-bottom: 12px; font-size:12px; display:inline-block; color:#4ade80;">✅ 授权状态: 加载中...</div>
         <div class="flex-between">
             <span>🟢 总组数：<strong id="totalPeriods">0</strong></span>
@@ -94,7 +101,7 @@
             <span style="font-size:11px;">（推荐30组，0=全部）</span>
             <button id="onlineCollectBtn" class="success" style="margin-left: auto;">🌐 在线采集</button>
         </div>
-        <div class="reason">💡 说明：特码热度值高、生肖占比大的中奖率高   </div>
+        <div class="reason">💡 说明：特码热度值高、生肖占比大的中奖率高</div>
     </div>
 
     <div class="card"><div class="card-header"><h3>🔴 特码统计</h3><button class="toggle-btn" data-target="freq-content">▼ 隐藏</button></div>
@@ -122,136 +129,71 @@
 </div>
 
 <script>
-    // ==================== 多重存储工具（混淆键名） ====================
-    const TrialMark = (function() {
-        const key = '_t_' + btoa('trial_data').substring(0, 16);
-        function set(data) {
-            const value = JSON.stringify(data);
-            try {
-                localStorage.setItem(key, value);
-                sessionStorage.setItem(key, value);
-                document.cookie = `${key}=${encodeURIComponent(value)}; max-age=86400; path=/`;
-            } catch(e) {}
-        }
-        function get() {
-            try {
-                let value = localStorage.getItem(key);
-                if (value) return JSON.parse(value);
-                value = sessionStorage.getItem(key);
-                if (value) return JSON.parse(value);
-                const cookieMatch = document.cookie.match(new RegExp('(^| )' + key + '=([^;]+)'));
-                if (cookieMatch) return JSON.parse(decodeURIComponent(cookieMatch[2]));
-            } catch(e) {}
-            return null;
-        }
-        function clear() {
-            localStorage.removeItem(key);
-            sessionStorage.removeItem(key);
-            document.cookie = `${key}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/`;
-        }
-        return { set, get, clear };
-    })();
+    // ==================== Worker 授权验证（一机一码） ====================
+    const WORKER_URL = 'https://api.mycm.cc.cd';
+    const STORAGE_KEY = "ANT_AUTH";
+    const DEVICE_UUID_KEY = "ANT_DEVICE_UUID";
 
-    // ==================== 授权管理核心 ====================
-    const STORAGE_LICENSE = 'lottery_auth_data';
-    function generateDeviceId() {
+    function getDeviceUUID() {
+        let uuid = localStorage.getItem(DEVICE_UUID_KEY);
+        if (!uuid) {
+            uuid = crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+                const r = Math.random() * 16 | 0;
+                const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+            localStorage.setItem(DEVICE_UUID_KEY, uuid);
+        }
+        return uuid;
+    }
+
+    async function fetchWithTimeout(url, options = {}, timeout = 10000) {
+        const controller = new AbortController();
+        const id = setTimeout(() => controller.abort(), timeout);
         try {
-            let code = localStorage.getItem("device_code");
-            if (!code) {
-                const temp = [navigator.userAgent, screen.width, screen.height, navigator.language].join("|");
-                let hash = 0;
-                for (let i = 0; i < temp.length; i++) {
-                    hash = ((hash << 5) - hash) + temp.charCodeAt(i);
-                    hash = hash & hash;
+            const response = await fetch(url, { ...options, signal: controller.signal });
+            clearTimeout(id);
+            return response;
+        } catch (err) {
+            clearTimeout(id);
+            throw err;
+        }
+    }
+
+    async function verifyAuthWithWorker(authCode) {
+        const deviceCode = getDeviceUUID();
+        if (!deviceCode || !authCode) return false;
+        try {
+            const resp = await fetchWithTimeout(`${WORKER_URL}/verify`, {
+                method: 'GET',
+                headers: {
+                    'X-Device-Code': deviceCode,
+                    'X-Auth-Code': authCode
                 }
-                code = Math.abs(hash).toString(16).toUpperCase();
-                localStorage.setItem("device_code", code);
-            }
-            return code;
-        } catch(e) { return "UNKNOWN_DEVICE"; }
-    }
-    function generateLicenseCode(deviceId, days) {
-        const secret = "ANT2026_ZODIAC";
-        let period = days === 0 ? "forever" : `${days}d`;
-        let raw = `${deviceId}|${period}|${secret}`;
-        let hash = 0;
-        for (let i = 0; i < raw.length; i++) {
-            hash = ((hash << 5) - hash) + raw.charCodeAt(i);
-            hash = hash & hash;
-        }
-        let hashHex = Math.abs(hash).toString(16).padStart(8, '0');
-        return `${period}_${hashHex}`;
-    }
-    function verifyLicenseCode(deviceId, code) {
-        if (!code || typeof code !== 'string') return null;
-        let parts = code.split('_');
-        if (parts.length !== 2) return null;
-        let periodStr = parts[0];
-        let providedHash = parts[1];
-        let days = null;
-        if (periodStr === 'forever') days = 0;
-        else if (periodStr.endsWith('d')) {
-            let num = parseInt(periodStr.slice(0, -1), 10);
-            if ([3,7,10,30,60].includes(num)) days = num;
-            else return null;
-        } else return null;
-        let expected = generateLicenseCode(deviceId, days).split('_')[1];
-        if (expected === providedHash) return days;
-        return null;
-    }
-    function saveAuth(expireTimestamp, days) {
-        let data = { deviceId: generateDeviceId(), expireTimestamp, days, verifiedAt: Date.now() };
-        localStorage.setItem(STORAGE_LICENSE, JSON.stringify(data));
-    }
-    function getAuth() {
-        let raw = localStorage.getItem(STORAGE_LICENSE);
-        if (!raw) return null;
-        try {
-            let data = JSON.parse(raw);
-            if (data.deviceId !== generateDeviceId()) return null;
-            return data;
-        } catch(e) { return null; }
-    }
-    function checkAuthValid() {
-        let auth = getAuth();
-        if (!auth) return false;
-        if (auth.days === 0) return true;
-        if (auth.expireTimestamp && Date.now() < auth.expireTimestamp) return true;
-        return false;
-    }
-    function getRemainingDays() {
-        let auth = getAuth();
-        if (!auth) return null;
-        if (auth.days === 0) return '永久';
-        let remainMs = auth.expireTimestamp - Date.now();
-        if (remainMs <= 0) return 0;
-        return Math.ceil(remainMs / (1000 * 60 * 60 * 24));
-    }
-
-    function applyTrial() {
-        const deviceId = generateDeviceId();
-        const trialData = TrialMark.get();
-        const now = Date.now();
-        if (trialData) {
-            if (now < trialData.expire) {
-                saveAuth(trialData.expire, 1);
-                return true;
-            } else {
-                return false;
-            }
-        } else {
-            const expire = now + 24 * 60 * 60 * 1000;
-            TrialMark.set({ expire, deviceId });
-            saveAuth(expire, 1);
-            return true;
+            }, 10000);
+            const data = await resp.json();
+            return data.valid === true;
+        } catch (err) {
+            console.error('验证请求失败', err);
+            return false;
         }
     }
 
-    function applyLicense(days) {
-        saveAuth(days === 0 ? 0 : Date.now() + days * 24 * 60 * 60 * 1000, days);
+    async function checkLocalAuth() {
+        const authCode = localStorage.getItem(STORAGE_KEY);
+        if (!authCode) return false;
+        return await verifyAuthWithWorker(authCode);
     }
 
-    // ==================== 业务逻辑 ====================
+    function saveAuthCode(authCode) {
+        localStorage.setItem(STORAGE_KEY, authCode);
+    }
+
+    function clearAuth() {
+        localStorage.removeItem(STORAGE_KEY);
+    }
+
+    // ==================== 业务逻辑（采集、统计、表格） ====================
     let allRecords = [], currentDisplayRecords = [];
     let autoCollectDone = false;
 
@@ -289,14 +231,12 @@
         if(!symbols) return [];
         return symbols.slice(0,6);
     }
-
     function detectLotteryType(line) {
         if (line.includes('新澳门')) return '新澳门六合彩';
         if (line.includes('香港')) return '香港六合彩';
         if (line.includes('老澳')) return '老澳';
         return null;
     }
-
     function parseAllData(text){
         let lines = text.split(/\r?\n/);
         let records = [];
@@ -445,25 +385,14 @@
         document.getElementById('totalPeriods').innerText = allRecords.length;
 
         let sortedNumbers = getSortedNumbersAll(freqTotal, freqRecent);
-        let tableHtml = `<table class="freq-table">
-            <thead>
-                <tr><th class="checkbox-col">✅</th><th>排名</th><th>特码</th><th>频次</th><th>近期</th><th>热度值</th></tr>
-            </thead>
-            <tbody>`;
+        let tableHtml = `<table class="freq-table"><thead><tr><th class="checkbox-col">✅</th><th>排名</th><th>特码</th><th>频次</th><th>近期</th><th>热度值</th></tr></thead><tbody>`;
         for(let i=0;i<sortedNumbers.length;i++){
             let it = sortedNumbers[i];
             let heat = '';
             if(it.total >= 4) heat = '🔥热';
             else if(it.total >= 2) heat = '🌡️温';
             else heat = '❄️冷';
-            tableHtml += `<tr>
-                <td class="checkbox-col"><input type="checkbox" class="num-checkbox" data-num="${it.num}"></td>
-                <td>${i+1}</td>
-                <td>${getColorSymbol(it.num)} ${it.num.toString().padStart(2,'0')}</td>
-                <td>${it.total}</td>
-                <td>${it.recent}</td>
-                <td>${heat}</td>
-            </tr>`;
+            tableHtml += `<tr><td class="checkbox-col"><input type="checkbox" class="num-checkbox" data-num="${it.num}"></td><td>${i+1}</td><td>${getColorSymbol(it.num)} ${it.num.toString().padStart(2,'0')}</td><td>${it.total}</td><td>${it.recent}</td><td>${heat}</td></tr>`;
         }
         tableHtml += `</tbody></table>`;
         document.getElementById('freqTable').innerHTML = tableHtml;
@@ -477,24 +406,11 @@
         let zodiacRecent = countRecentZodiacs(currentDisplayRecords);
         let totalZod = currentDisplayRecords.reduce((s,r)=>s+r.zodiacs.length,0);
         let sortedZod = getSortedZodiacs(zodiacTotal, zodiacRecent);
-        
-        let rankHtml = `<div class="reason">📊 生肖排名 打法以占比率主高防低 </div>
-        <table class="zodiac-rank-table">
-            <thead>
-                <tr><th class="checkbox-col">✅</th><th>排名</th><th>生肖</th><th>频次</th><th>近期</th><th>占比</th></tr>
-            </thead>
-            <tbody>`;
+        let rankHtml = `<div class="reason">📊 生肖排名 打法以占比率主高防低 </div><table class="zodiac-rank-table"><thead><tr><th class="checkbox-col">✅</th><th>排名</th><th>生肖</th><th>频次</th><th>近期</th><th>占比</th></tr></thead><tbody>`;
         for(let i=0;i<sortedZod.length;i++){
             let z = sortedZod[i];
             let p = totalZod ? ((z.total/totalZod)*100).toFixed(1) : 0;
-            rankHtml += `<tr>
-                <td class="checkbox-col"><input type="checkbox" class="zodiac-checkbox" data-zodiac="${z.name}"></td>
-                <td>${i+1}</td>
-                <td>${getZodiacEmoji(z.name)} ${z.name}</td>
-                <td>${z.total}次</td>
-                <td>${z.recent}次</td>
-                <td>${p}%</td>
-            </tr>`;
+            rankHtml += `<tr><td class="checkbox-col"><input type="checkbox" class="zodiac-checkbox" data-zodiac="${z.name}"></td><td>${i+1}</td><td>${getZodiacEmoji(z.name)} ${z.name}</td><td>${z.total}次</td><td>${z.recent}次</td><td>${p}%</td></tr>`;
         }
         rankHtml += `</tbody></table>`;
         document.getElementById('zodiacRankingContainer').innerHTML = rankHtml;
@@ -503,19 +419,12 @@
         const zodiacCheckboxes = document.querySelectorAll('.zodiac-checkbox');
         const selectAllNum = document.getElementById('selectAllCheckbox');
         const selectAllZod = document.getElementById('zodiacSelectAllCheckbox');
-        
-        const updateNumSelectAll = () => {
-            if(selectAllNum) selectAllNum.checked = numCheckboxes.length > 0 && Array.from(numCheckboxes).every(cb => cb.checked);
-        };
-        const updateZodSelectAll = () => {
-            if(selectAllZod) selectAllZod.checked = zodiacCheckboxes.length > 0 && Array.from(zodiacCheckboxes).every(cb => cb.checked);
-        };
-        
+        const updateNumSelectAll = () => { if(selectAllNum) selectAllNum.checked = numCheckboxes.length > 0 && Array.from(numCheckboxes).every(cb => cb.checked); };
+        const updateZodSelectAll = () => { if(selectAllZod) selectAllZod.checked = zodiacCheckboxes.length > 0 && Array.from(zodiacCheckboxes).every(cb => cb.checked); };
         numCheckboxes.forEach(cb => cb.addEventListener('change', updateNumSelectAll));
         zodiacCheckboxes.forEach(cb => cb.addEventListener('change', updateZodSelectAll));
         updateNumSelectAll();
         updateZodSelectAll();
-
         updateNextPeriodCaption();
     }
 
@@ -527,86 +436,41 @@
     }
 
     async function copyToClipboard(text, successMsg) {
-        if (!text || text.length === 0) {
-            showToast('没有可复制的内容');
-            return false;
-        }
+        if (!text || text.length === 0) { showToast('没有可复制的内容'); return false; }
         if (navigator.clipboard && window.isSecureContext) {
-            try {
-                await navigator.clipboard.writeText(text);
-                showToast(successMsg);
-                return true;
-            } catch (err) {
-                console.warn('Clipboard API 失败，尝试降级方案', err);
-            }
+            try { await navigator.clipboard.writeText(text); showToast(successMsg); return true; } catch (err) { console.warn(err); }
         }
         try {
             const textarea = document.createElement('textarea');
             textarea.value = text;
             textarea.style.position = 'fixed';
             textarea.style.top = '-9999px';
-            textarea.style.left = '-9999px';
             document.body.appendChild(textarea);
             textarea.select();
-            textarea.setSelectionRange(0, text.length);
             const success = document.execCommand('copy');
             document.body.removeChild(textarea);
-            if (success) {
-                showToast(successMsg);
-                return true;
-            } else {
-                throw new Error('execCommand 返回 false');
-            }
-        } catch (err) {
-            console.error('复制失败', err);
-            showToast('复制失败，请手动复制');
-            return false;
-        }
+            if (success) { showToast(successMsg); return true; }
+            throw new Error('execCommand failed');
+        } catch (err) { console.error(err); showToast('复制失败，请手动复制'); return false; }
     }
 
     function copySelectedNumbers() {
-        let checkedCheckboxes = document.querySelectorAll('.num-checkbox:checked');
-        if (checkedCheckboxes.length === 0) {
-            showToast('未勾选号码');
-            return;
-        }
-        let nums = Array.from(checkedCheckboxes).map(cb => cb.getAttribute('data-num'));
-        let textToCopy = nums.join(', ');
-        copyToClipboard(textToCopy, `已复制 ${nums.length} 个号码（按排名顺序）`);
+        let checked = document.querySelectorAll('.num-checkbox:checked');
+        if (checked.length === 0) { showToast('未勾选号码'); return; }
+        let nums = Array.from(checked).map(cb => cb.getAttribute('data-num'));
+        copyToClipboard(nums.join(', '), `已复制 ${nums.length} 个号码`);
     }
-
     function copySelectedZodiac() {
-        let checkedCheckboxes = document.querySelectorAll('.zodiac-checkbox:checked');
-        if (checkedCheckboxes.length === 0) {
-            showToast('未勾选生肖');
-            return;
-        }
-        let zodiacs = Array.from(checkedCheckboxes).map(cb => cb.getAttribute('data-zodiac'));
-        let textToCopy = zodiacs.join('、');
-        copyToClipboard(textToCopy, `已复制 ${zodiacs.length} 个生肖（按排名顺序）`);
+        let checked = document.querySelectorAll('.zodiac-checkbox:checked');
+        if (checked.length === 0) { showToast('未勾选生肖'); return; }
+        let zodiacs = Array.from(checked).map(cb => cb.getAttribute('data-zodiac'));
+        copyToClipboard(zodiacs.join('、'), `已复制 ${zodiacs.length} 个生肖`);
     }
+    function toggleSelectAll(){ let c = document.getElementById('selectAllCheckbox').checked; document.querySelectorAll('.num-checkbox').forEach(cb=>cb.checked=c); }
+    function toggleZodiacAll(){ let c = document.getElementById('zodiacSelectAllCheckbox').checked; document.querySelectorAll('.zodiac-checkbox').forEach(cb=>cb.checked=c); }
+    function showToast(msg){ let t = document.createElement('div'); t.className = 'toast-msg'; t.innerText = msg; document.body.appendChild(t); setTimeout(()=>t.remove(), 2000); }
 
-    function toggleSelectAll(){
-        let isChecked = document.getElementById('selectAllCheckbox').checked;
-        document.querySelectorAll('.num-checkbox').forEach(cb=>cb.checked=isChecked);
-    }
-
-    function toggleZodiacAll(){
-        let isChecked = document.getElementById('zodiacSelectAllCheckbox').checked;
-        document.querySelectorAll('.zodiac-checkbox').forEach(cb=>cb.checked=isChecked);
-    }
-
-    function showToast(msg){
-        let t = document.createElement('div');
-        t.className = 'toast-msg';
-        t.innerText = msg;
-        document.body.appendChild(t);
-        setTimeout(()=>t.remove(), 2000);
-    }
-
-    // ================== 在线采集功能（已修改为新的URL） ==================
     const DATA_API_URL = 'https://mayipan.eu.cc/lottery_data_api.html';
-
     async function onlineCollect() {
         const btn = document.getElementById('onlineCollectBtn');
         const originalText = btn.innerText;
@@ -617,15 +481,9 @@
             const response = await fetch(url, { cache: 'no-cache' });
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
             const dataText = await response.text();
-            if (!dataText || dataText.trim() === '') {
-                showToast('采集返回数据为空');
-                return;
-            }
+            if (!dataText || dataText.trim() === '') { showToast('采集返回数据为空'); return; }
             const parsed = parseAllData(dataText);
-            if (!parsed.length) {
-                showToast('数据格式错误，无法解析');
-                return;
-            }
+            if (!parsed.length) { showToast('数据格式错误，无法解析'); return; }
             allRecords = parsed;
             autoFilter();
             showToast(`在线采集成功，已加载 ${allRecords.length} 组数据`);
@@ -639,7 +497,6 @@
         }
     }
 
-    // ================== 实时时钟 ==================
     let clockInterval = null;
     function updateCurrentDateTime() {
         const now = new Date();
@@ -654,34 +511,15 @@
         if (timeSpan) timeSpan.innerText = `📅 时间：${dateTimeStr}`;
     }
 
-    // 初始化主界面
-    function initAppAfterAuth() {
+    async function initAppAfterAuth() {
         document.getElementById('authPanel').style.display = 'none';
         document.getElementById('appContainer').style.display = 'block';
-        let remain = getRemainingDays();
-        let licenseSpan = document.getElementById('licenseInfo');
-        if(remain===null) licenseSpan.innerText = '⚠️ 授权异常';
-        else if(remain==='永久') licenseSpan.innerText = '✅ 永久授权 · 无限使用';
-        else if(typeof remain==='number' && remain>0) licenseSpan.innerText = `✅ 已授权 · 剩余 ${remain} 天`;
-        else licenseSpan.innerText = '⚠️ 授权已过期';
-
+        document.getElementById('licenseInfo').innerText = '✅ 已授权 ·（推广期间600元/周）';
         if(clockInterval) clearInterval(clockInterval);
         updateCurrentDateTime();
         clockInterval = setInterval(updateCurrentDateTime, 1000);
-
         const lastData = localStorage.getItem('last_collected_data');
-        if (lastData) {
-            const parsed = parseAllData(lastData);
-            if (parsed.length) {
-                allRecords = parsed;
-                autoFilter();
-            } else {
-                renderAll();
-            }
-        } else {
-            renderAll();
-        }
-
+        if (lastData) { const parsed = parseAllData(lastData); if (parsed.length) { allRecords = parsed; autoFilter(); } else { renderAll(); } } else { renderAll(); }
         document.getElementById('copySelectedNumbersBtn').onclick = copySelectedNumbers;
         document.getElementById('copySelectedZodiacBtn').onclick = copySelectedZodiac;
         document.getElementById('selectAllCheckbox').onchange = toggleSelectAll;
@@ -689,67 +527,47 @@
         document.getElementById('periodLimit').addEventListener('input', autoFilter);
         const collectBtn = document.getElementById('onlineCollectBtn');
         if (collectBtn) collectBtn.onclick = onlineCollect;
-        document.querySelectorAll('.toggle-btn').forEach(btn=>btn.addEventListener('click',function(){
-            let t = document.getElementById(this.dataset.target);
-            if(t) t.classList.toggle('collapsed');
-        }));
-
-        if (!autoCollectDone) {
-            autoCollectDone = true;
-            setTimeout(() => {
-                onlineCollect();
-            }, 500);
-        }
+        document.querySelectorAll('.toggle-btn').forEach(btn=>btn.addEventListener('click',function(){ let t = document.getElementById(this.dataset.target); if(t) t.classList.toggle('collapsed'); }));
+        if (!autoCollectDone) { autoCollectDone = true; setTimeout(() => { onlineCollect(); }, 500); }
     }
 
-    document.getElementById('verifyBtn').onclick = ()=>{
-        let code = document.getElementById('authCodeInput').value.trim();
-        if(!code){ document.getElementById('authStatusMsg').innerText='请输入授权码'; return; }
-        let device = generateDeviceId();
-        let days = verifyLicenseCode(device, code);
-        if(days!==null){
-            applyLicense(days);
-            document.getElementById('authStatusMsg').innerHTML = `✅ 授权成功！剩余${days===0?'永久':days+'天'}，即将刷新`;
-            setTimeout(()=>{ location.reload(); }, 800);
-        } else { document.getElementById('authStatusMsg').innerText = '❌ 授权码无效'; }
-    };
-    document.getElementById('trialBtn').onclick = ()=>{
-        let auth = getAuth();
-        if(auth && checkAuthValid()){
-            document.getElementById('authStatusMsg').innerText='已有有效授权，无需试用';
-            return;
-        }
-        const success = applyTrial();
-        if(success){
-            document.getElementById('authStatusMsg').innerHTML = '✅ 试用1天已激活，即将刷新';
-            setTimeout(()=>{ location.reload(); }, 800);
+    // 页面启动逻辑：有授权码则直接显示主界面，避免闪现
+    (async function() {
+        const deviceId = getDeviceUUID();
+        document.getElementById('deviceIdDisplay').innerText = deviceId;
+        document.getElementById('copyDeviceBtn').onclick = () => {
+            copyToClipboard(deviceId, '设备码已复制');
+        };
+        const localAuthCode = localStorage.getItem(STORAGE_KEY);
+        if (localAuthCode) {
+            // 先显示主界面，后台验证，若无效再切回授权面板
+            initAppAfterAuth();
+            const valid = await verifyAuthWithWorker(localAuthCode);
+            if (!valid) {
+                clearAuth();
+                document.getElementById('authPanel').style.display = 'flex';
+                document.getElementById('appContainer').style.display = 'none';
+                document.getElementById('authStatusMsg').innerText = '授权已失效，请重新输入授权码';
+            }
         } else {
-            document.getElementById('authStatusMsg').innerHTML = '❌ 试用已过期，请获取授权码';
+            document.getElementById('authPanel').style.display = 'flex';
+            document.getElementById('appContainer').style.display = 'none';
+            document.getElementById('authStatusMsg').innerText = '未授权，请输入授权码';
         }
-    };
-    document.getElementById('deviceIdDisplay').innerText = `设备码: ${generateDeviceId()}`;
-
-    const trial = TrialMark.get();
-    if (trial && trial.expire && Date.now() < trial.expire) {
-        const auth = getAuth();
-        if (!auth || !checkAuthValid()) {
-            saveAuth(trial.expire, 1);
-        }
-    }
-
-    if(checkAuthValid()){
-        initAppAfterAuth();
-    } else {
-        document.getElementById('authPanel').style.display = 'flex';
-        document.getElementById('appContainer').style.display = 'none';
-    }
-
-    window.generateCodeForDevice = (deviceId, type)=>{
-        let map={'3天':3,'7天':7,'10天':10,'30天':30,'60天':60,'永久':0};
-        let days=map[type];
-        if(days===undefined && days!==0) return null;
-        return generateLicenseCode(deviceId, days);
-    };
+        document.getElementById('verifyBtn').onclick = async () => {
+            const code = document.getElementById('authCodeInput').value.trim();
+            if (!code) { document.getElementById('authStatusMsg').innerText = '请输入授权码'; return; }
+            document.getElementById('authStatusMsg').innerText = '验证中...';
+            const valid = await verifyAuthWithWorker(code);
+            if (valid) {
+                saveAuthCode(code);
+                document.getElementById('authStatusMsg').innerText = '✅ 授权成功，正在加载...';
+                initAppAfterAuth();
+            } else {
+                document.getElementById('authStatusMsg').innerText = '❌ 授权码无效，请联系管理员';
+            }
+        };
+    })();
 </script>
 </body>
 </html>
