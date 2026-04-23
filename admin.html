@@ -3,54 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>授权管理 · 一机一码（支持有效期）</title>
+    <title>授权管理 · 一机一码</title>
     <style>
-        body { background:#0a0a0a; color:#eee; font-family: system-ui; padding: 20px; max-width: 1000px; margin: auto; }
-        .card { background: #1e1e1e; border-radius: 20px; padding: 20px; margin-bottom: 20px; }
-        button { background: #007bff; border: none; color: white; padding: 8px 16px; border-radius: 40px; cursor: pointer; margin-right: 8px; margin-top: 8px; }
-        input, select { background: #2a2a2a; border: none; padding: 10px; border-radius: 40px; color: white; width: 100%; margin: 8px 0; }
+        body { background:#0a0a0a; color:#eee; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; padding: 20px; max-width: 1000px; margin: auto; }
+        .card { background: #1e1e1e; border-radius: 24px; padding: 24px; margin-bottom: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+        h2 { margin-top: 0; margin-bottom: 16px; font-size: 1.5rem; color: #facc15; }
+        label { display: block; margin: 12px 0 4px; font-size: 0.85rem; color: #aaa; }
+        input, button { background: #2a2a2a; border: none; border-radius: 40px; padding: 10px 16px; color: white; font-size: 14px; }
+        input { width: 100%; margin-bottom: 8px; }
+        button { background: #007bff; cursor: pointer; transition: 0.2s; margin-right: 8px; margin-top: 8px; }
+        button:hover { background: #0056b3; transform: scale(0.98); }
+        button.secondary { background: #3a3a3a; }
+        button.danger { background: #dc3545; }
+        .flex { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+        .flex input { flex: 1; margin-bottom: 0; }
+        table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 13px; }
+        th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid #2c2c2c; word-break: break-all; }
+        th { color: #aaa; font-weight: 500; }
+        code { background: #0a0a0a; padding: 2px 6px; border-radius: 8px; font-family: monospace; }
         .success { color: #6fcf97; }
         .error { color: #e74c3c; }
-        .warning { color: #f39c12; }
-        table { width: 100%; border-collapse: collapse; margin-top: 16px; }
-        th, td { text-align: left; padding: 8px; border-bottom: 1px solid #333; word-break: break-all; }
-        code { background: #0a0a0a; padding: 2px 6px; border-radius: 6px; }
-        .flex { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
-        .flex input, .flex select { flex: 1; }
-        .expired { color: #e74c3c; }
-        .valid { color: #6fcf97; }
+        .message { margin-top: 12px; font-size: 13px; }
+        hr { border-color: #2c2c2c; margin: 20px 0; }
     </style>
 </head>
 <body>
 <div class="card">
-    <h2>🔐 一机一码 · 授权绑定管理（支持有效期）</h2>
+    <h2>🔐 一机一码 · 授权绑定管理</h2>
     <div>
-        <label>Worker 地址：</label>
+        <label>Worker 地址</label>
         <input type="text" id="workerUrl" placeholder="https://api.mycm.cc.cd" value="https://api.mycm.cc.cd">
-        <label>管理密钥：</label>
+        <label>管理密钥</label>
         <input type="password" id="adminKey" placeholder="管理员密钥 (ADMIN_KEY)">
     </div>
-    <hr style="margin: 16px 0; border-color: #333;">
+    <hr>
     <div class="flex">
         <input type="text" id="deviceCode" placeholder="用户设备码 (UUID)">
         <input type="text" id="authCode" placeholder="授权码 (可手动输入)">
-        <select id="expireDaysSelect">
-            <option value="0">永久有效</option>
-            <option value="1">1 天</option>
-            <option value="7">7 天</option>
-            <option value="30">30 天</option>
-            <option value="90">90 天</option>
-            <option value="365">365 天</option>
-        </select>
         <button id="generateAuthBtn">🎲 生成随机码</button>
         <button id="bindBtn">🔗 绑定</button>
     </div>
-    <div id="message" style="margin-top: 12px;"></div>
+    <div id="message" class="message"></div>
 </div>
 
 <div class="card">
     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
-        <h3>📋 当前绑定列表</h3>
+        <h2 style="margin:0;">📋 当前绑定列表</h2>
         <div>
             <button id="refreshListBtn">🔄 刷新列表</button>
             <button id="exportListBtn">📤 导出 JSON</button>
@@ -60,186 +58,158 @@
     </div>
     <div style="overflow-x: auto;">
         <table id="bindTable">
-            <thead><tr><th>设备码</th><th>授权码</th><th>过期时间</th><th>状态</th><th>操作</th></tr></thead>
-            <tbody><tr><td colspan="5" style="text-align:center;">点击刷新按钮加载列表</td></tr>
+            <thead><tr><th>设备码</th><th>授权码</th><th>操作</th></tr></thead>
+            <tbody><tr><td colspan="3" style="text-align:center;">点击刷新按钮加载列表</td></tr></tbody>
         </table>
     </div>
 </div>
 
 <script>
-    let currentBindings = [];
+    (function() {
+        let currentBindings = [];
 
-    function getWorkerUrl() {
-        let url = document.getElementById('workerUrl').value.trim();
-        if (url.endsWith('/')) url = url.slice(0, -1);
-        return url;
-    }
-
-    function getAdminKey() {
-        return document.getElementById('adminKey').value.trim();
-    }
-
-    async function apiCall(endpoint, method, body = null) {
-        const url = `${getWorkerUrl()}${endpoint}`;
-        const headers = {
-            'X-Admin-Key': getAdminKey(),
-            'Content-Type': 'application/json'
-        };
-        const options = { method, headers };
-        if (body) options.body = JSON.stringify(body);
-        const resp = await fetch(url, options);
-        const data = await resp.json();
-        if (!resp.ok) throw new Error(data.error || `HTTP ${resp.status}`);
-        return data;
-    }
-
-    async function loadBindings() {
-        try {
-            const data = await apiCall('/admin/list', 'GET');
-            currentBindings = data.bindings || [];
-            renderTable();
-            showMessage(`加载成功，共 ${currentBindings.length} 条绑定`, 'success');
-        } catch (err) {
-            showMessage(`加载失败：${err.message}`, 'error');
+        function getWorkerUrl() {
+            let url = document.getElementById('workerUrl').value.trim();
+            if (url.endsWith('/')) url = url.slice(0, -1);
+            return url;
         }
-    }
+        function getAdminKey() { return document.getElementById('adminKey').value.trim(); }
 
-    function formatExpireTime(expireAt) {
-        if (!expireAt) return '永久';
-        const date = new Date(expireAt);
-        return date.toLocaleString();
-    }
-
-    function isExpired(expireAt) {
-        if (!expireAt) return false;
-        return Date.now() > expireAt;
-    }
-
-    function renderTable() {
-        const tbody = document.querySelector('#bindTable tbody');
-        if (!currentBindings.length) {
-            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">暂无绑定</td></tr>';
-            return;
+        async function apiCall(endpoint, method, body = null) {
+            const url = `${getWorkerUrl()}${endpoint}`;
+            const headers = { 'X-Admin-Key': getAdminKey(), 'Content-Type': 'application/json' };
+            const options = { method, headers };
+            if (body) options.body = JSON.stringify(body);
+            const resp = await fetch(url, options);
+            const data = await resp.json();
+            if (!resp.ok) throw new Error(data.error || `HTTP ${resp.status}`);
+            return data;
         }
-        let html = '';
-        for (const b of currentBindings) {
-            const expired = isExpired(b.expireAt);
-            const statusClass = expired ? 'expired' : 'valid';
-            const statusText = expired ? '已过期' : (b.expireAt ? '有效' : '永久有效');
-            html += `<tr>
-                <td><code>${escapeHtml(b.deviceCode)}</code></td>
-                <td><code>${escapeHtml(b.authCode)}</code></td>
-                <td>${formatExpireTime(b.expireAt)}</td>
-                <td class="${statusClass}">${statusText}</td>
-                <td><button onclick="unbind('${escapeHtml(b.deviceCode)}')">解除绑定</button></td>
-            </tr>`;
-        }
-        tbody.innerHTML = html;
-    }
 
-    window.unbind = async (deviceCode) => {
-        if (!confirm(`确定要解除设备 ${deviceCode} 的绑定吗？`)) return;
-        try {
-            await apiCall('/admin/unbind', 'POST', { deviceCode });
-            showMessage(`已解除 ${deviceCode} 的绑定`, 'success');
-            await loadBindings();
-        } catch (err) {
-            showMessage(`解除失败：${err.message}`, 'error');
-        }
-    };
-
-    async function bindDevice(deviceCode, authCode, expireDays) {
-        await apiCall('/admin/bind', 'POST', { deviceCode, authCode, expireDays });
-    }
-
-    document.getElementById('bindBtn').onclick = async () => {
-        const deviceCode = document.getElementById('deviceCode').value.trim();
-        let authCode = document.getElementById('authCode').value.trim();
-        const expireDays = parseInt(document.getElementById('expireDaysSelect').value, 10);
-        if (!deviceCode) { showMessage('请填写设备码', 'error'); return; }
-        if (!authCode) { authCode = generateRandomCode(); document.getElementById('authCode').value = authCode; }
-        showMessage('⏳ 绑定中...', '');
-        try {
-            await bindDevice(deviceCode, authCode, expireDays || null);
-            const expireMsg = expireDays ? `${expireDays} 天后过期` : '永久有效';
-            showMessage(`✅ 绑定成功：${deviceCode} → ${authCode} (${expireMsg})`, 'success');
-            document.getElementById('deviceCode').value = '';
-            document.getElementById('authCode').value = '';
-            await loadBindings();
-        } catch (err) {
-            showMessage(`❌ 绑定失败：${err.message}`, 'error');
-        }
-    };
-
-    document.getElementById('generateAuthBtn').onclick = () => {
-        const code = generateRandomCode();
-        document.getElementById('authCode').value = code;
-    };
-
-    function generateRandomCode() {
-        return Math.random().toString(36).substring(2, 10).toUpperCase();
-    }
-
-    document.getElementById('refreshListBtn').onclick = loadBindings;
-    document.getElementById('exportListBtn').onclick = () => {
-        const dataStr = JSON.stringify(currentBindings, null, 2);
-        const blob = new Blob([dataStr], {type: 'application/json'});
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `bindings_${new Date().toISOString().slice(0,19)}.json`;
-        a.click();
-        URL.revokeObjectURL(a.href);
-    };
-    document.getElementById('importBtn').onclick = () => document.getElementById('importFile').click();
-    document.getElementById('importFile').onchange = async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = async (ev) => {
+        async function loadBindings() {
             try {
-                const imported = JSON.parse(ev.target.result);
-                if (!Array.isArray(imported)) throw new Error('格式错误');
-                showMessage(`正在导入 ${imported.length} 条记录...`, '');
-                for (const item of imported) {
-                    if (item.deviceCode && item.authCode) {
-                        const expireDays = item.expireAt ? Math.ceil((item.expireAt - Date.now()) / 86400000) : 0;
-                        await bindDevice(item.deviceCode, item.authCode, expireDays > 0 ? expireDays : null);
-                    }
-                }
-                await loadBindings();
-                showMessage('导入完成', 'success');
+                const data = await apiCall('/admin/list', 'GET');
+                currentBindings = data.bindings || [];
+                renderTable();
+                showMessage(`加载成功，共 ${currentBindings.length} 条绑定`, 'success');
             } catch (err) {
-                showMessage(`导入失败：${err.message}`, 'error');
+                showMessage(`加载失败：${err.message}`, 'error');
+            }
+        }
+
+        function renderTable() {
+            const tbody = document.querySelector('#bindTable tbody');
+            if (!currentBindings.length) {
+                tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">暂无绑定</td></tr>';
+                return;
+            }
+            let html = '';
+            for (const b of currentBindings) {
+                html += `<tr>
+                    <td><code>${escapeHtml(b.deviceCode)}</code></td>
+                    <td><code>${escapeHtml(b.authCode)}</code></td>
+                    <td><button onclick="unbind('${escapeHtml(b.deviceCode)}')">解除绑定</button></td>
+                </tr>`;
+            }
+            tbody.innerHTML = html;
+        }
+
+        window.unbind = async (deviceCode) => {
+            if (!confirm(`确定要解除设备 ${deviceCode} 的绑定吗？`)) return;
+            try {
+                await apiCall('/admin/unbind', 'POST', { deviceCode });
+                showMessage(`已解除 ${deviceCode} 的绑定`, 'success');
+                await loadBindings();
+            } catch (err) {
+                showMessage(`解除失败：${err.message}`, 'error');
             }
         };
-        reader.readAsText(file);
-        e.target.value = '';
-    };
 
-    function showMessage(msg, type) {
-        const msgDiv = document.getElementById('message');
-        msgDiv.innerHTML = msg;
-        msgDiv.className = type === 'success' ? 'success' : (type === 'error' ? 'error' : '');
-        setTimeout(() => { if (msgDiv.innerHTML === msg) msgDiv.innerHTML = ''; }, 3000);
-    }
+        async function bindDevice(deviceCode, authCode) {
+            await apiCall('/admin/bind', 'POST', { deviceCode, authCode });
+        }
 
-    function escapeHtml(str) {
-        return str.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]));
-    }
+        document.getElementById('bindBtn').onclick = async () => {
+            const deviceCode = document.getElementById('deviceCode').value.trim();
+            let authCode = document.getElementById('authCode').value.trim();
+            if (!deviceCode) { showMessage('请填写设备码', 'error'); return; }
+            if (!authCode) { authCode = generateRandomCode(); document.getElementById('authCode').value = authCode; }
+            showMessage('⏳ 绑定中...', '');
+            try {
+                await bindDevice(deviceCode, authCode);
+                showMessage(`✅ 绑定成功：${deviceCode} → ${authCode}`, 'success');
+                document.getElementById('deviceCode').value = '';
+                document.getElementById('authCode').value = '';
+                await loadBindings();
+            } catch (err) {
+                showMessage(`❌ 绑定失败：${err.message}`, 'error');
+            }
+        };
 
-    // 保存配置
-    if (localStorage.getItem('admin_worker_url')) {
-        document.getElementById('workerUrl').value = localStorage.getItem('admin_worker_url');
-    }
-    if (localStorage.getItem('admin_key')) {
-        document.getElementById('adminKey').value = localStorage.getItem('admin_key');
-    }
-    document.getElementById('workerUrl').addEventListener('change', () => {
-        localStorage.setItem('admin_worker_url', document.getElementById('workerUrl').value);
-    });
-    document.getElementById('adminKey').addEventListener('change', () => {
-        localStorage.setItem('admin_key', document.getElementById('adminKey').value);
-    });
+        function generateRandomCode() {
+            return Math.random().toString(36).substring(2, 10).toUpperCase();
+        }
+
+        document.getElementById('generateAuthBtn').onclick = () => {
+            document.getElementById('authCode').value = generateRandomCode();
+        };
+        document.getElementById('refreshListBtn').onclick = loadBindings;
+        document.getElementById('exportListBtn').onclick = () => {
+            const dataStr = JSON.stringify(currentBindings, null, 2);
+            const blob = new Blob([dataStr], {type: 'application/json'});
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `bindings_${new Date().toISOString().slice(0,19)}.json`;
+            a.click();
+            URL.revokeObjectURL(a.href);
+        };
+        document.getElementById('importBtn').onclick = () => document.getElementById('importFile').click();
+        document.getElementById('importFile').onchange = async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async (ev) => {
+                try {
+                    const imported = JSON.parse(ev.target.result);
+                    if (!Array.isArray(imported)) throw new Error('格式错误');
+                    showMessage(`正在导入 ${imported.length} 条记录...`, '');
+                    for (const item of imported) {
+                        if (item.deviceCode && item.authCode) {
+                            await bindDevice(item.deviceCode, item.authCode);
+                        }
+                    }
+                    await loadBindings();
+                    showMessage('导入完成', 'success');
+                } catch (err) {
+                    showMessage(`导入失败：${err.message}`, 'error');
+                }
+            };
+            reader.readAsText(file);
+            e.target.value = '';
+        };
+
+        function showMessage(msg, type) {
+            const msgDiv = document.getElementById('message');
+            msgDiv.innerHTML = msg;
+            msgDiv.className = type === 'success' ? 'success' : (type === 'error' ? 'error' : '');
+            setTimeout(() => { if (msgDiv.innerHTML === msg) msgDiv.innerHTML = ''; }, 3000);
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/[&<>]/g, m => {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            });
+        }
+
+        // 保存配置
+        if (localStorage.getItem('admin_worker_url')) document.getElementById('workerUrl').value = localStorage.getItem('admin_worker_url');
+        if (localStorage.getItem('admin_key')) document.getElementById('adminKey').value = localStorage.getItem('admin_key');
+        document.getElementById('workerUrl').addEventListener('change', () => localStorage.setItem('admin_worker_url', document.getElementById('workerUrl').value));
+        document.getElementById('adminKey').addEventListener('change', () => localStorage.setItem('admin_key', document.getElementById('adminKey').value));
+    })();
 </script>
 </body>
 </html>
