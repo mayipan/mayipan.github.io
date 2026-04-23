@@ -141,24 +141,21 @@
 <div class="auth-modal" id="authModal">
     <div class="auth-box">
         <h2>🔒 授权验证</h2>
-        <!-- 设备码行 -->
-        <div style="color:#ccc; text-align:left;">你的设备码：</div>
+        <div style="color:#ccc;">你的设备码：</div>
         <div style="display: flex; gap: 8px; align-items: center; margin: 8px 0 16px 0;">
-            <span id="deviceCode" style="flex:1; background:#252525; padding:8px; border-radius:8px; font-family:monospace; font-size:12px; word-break:break-all; color:#eee;">Loading...</span>
-            <button class="copy-code-btn" onclick="copyDeviceCode()" style="background:#007bff; border:none; border-radius:8px; padding:10px 16px; color:#fff; cursor:pointer; font-size:14px; white-space:nowrap;">📋 复制</button>
+            <span id="deviceCode" style="flex:1; background:#252525; padding:8px; border-radius:8px; font-family:monospace; font-size:12px; word-break:break-all;">Loading...</span>
+            <button id="copyDeviceBtn" style="background:#007bff; border:none; border-radius:8px; padding:10px 16px; color:#fff; cursor:pointer; font-size:14px;">📋 复制</button>
         </div>
-        <!-- 授权码行 -->
-        <div style="color:#ccc; text-align:left;">请输入授权码：</div>
+        <div style="color:#ccc;">请输入授权码：</div>
         <div style="display: flex; gap: 8px; margin: 8px 0 20px 0;">
-            <input type="password" class="auth-input" id="authCode" placeholder="输入授权码" style="flex:1; background:#252525; border:none; border-radius:8px; padding:10px; color:#fff; font-size:14px;">
-            <button class="auth-btn" id="verifyBtn" onclick="checkAuth()" style="background:#007bff; border:none; border-radius:8px; padding:10px 16px; color:#fff; cursor:pointer; font-size:14px; white-space:nowrap;">确认</button>
+            <input type="password" id="authCode" placeholder="输入授权码" style="flex:1; background:#252525; border:none; border-radius:8px; padding:10px; color:#fff; font-size:14px;">
+            <button id="verifyBtn" style="background:#007bff; border:none; border-radius:8px; padding:10px 16px; color:#fff; cursor:pointer; font-size:14px;">确认</button>
         </div>
-        <!-- 底部说明 -->
         <div class="auth-footer" style="margin-top:8px; font-size:12px; color:#888; line-height:1.4;">
             首次使用或授权已过期，请将【设备码】发送给 @mayiya_bot 获取授权码<br>
             官方授权：<a href="https://t.me/mayiya_bot" target="_blank">机器人</a>
         </div>
-        <div class="auth-tip" id="authTip" style="margin-top:12px; font-size:12px;"></div>
+        <div id="authTip" style="margin-top:12px; font-size:12px;"></div>
     </div>
 </div>
 
@@ -370,10 +367,38 @@ async function checkAuth() {
     }
 }
 
-function copyDeviceCode() {
-    const code = getDeviceUUID();
-    copyToClipboard(code, 'authTip');
-}
+// 修复复制按钮事件
+document.getElementById('copyDeviceBtn').onclick = function() {
+    const code = document.getElementById('deviceCode').innerText;
+    if (!code || code === 'Loading...') {
+        alert('设备码未加载');
+        return;
+    }
+    function copy(text) {
+        const tip = document.getElementById('authTip');
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(() => {
+                tip.innerText = '✅ 已复制';
+                setTimeout(() => tip.innerText = '', 1500);
+            }).catch(() => fallback(text));
+        } else {
+            fallback(text);
+        }
+        function fallback(t) {
+            const ta = document.createElement('textarea');
+            ta.value = t;
+            ta.style.position = 'fixed';
+            ta.style.top = '-9999px';
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            tip.innerText = '✅ 已复制';
+            setTimeout(() => tip.innerText = '', 1500);
+        }
+    }
+    copy(code);
+};
 
 // ==================== 以下为原版所有功能（完全保留） ====================
 const ZODIAC_LIST = ['马','蛇','龙','兔','虎','牛','鼠','猪','狗','鸡','猴','羊'];
