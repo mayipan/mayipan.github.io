@@ -24,6 +24,7 @@
         .input-info { font-size:12px; color:#888; margin-top:4px; }
         .btn-group { display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap; }
         button, .btn-link { flex:1; min-width:60px; padding:10px 4px; border:none; border-radius:8px; background:#252525; color:#eee; font-size:13px; cursor:pointer; transition:all 0.2s; text-align:center; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; min-height:44px; line-height:1.2; }
+        button:disabled { opacity:0.5; cursor:not-allowed; }
         .btn-link { background:#252525; color:#eee; }
         .btn-link:hover { background:#3a3a3a; }
         button:active, .btn-link:active { opacity:0.7; transform:scale(0.96); }
@@ -140,16 +141,24 @@
 <div class="auth-modal" id="authModal">
     <div class="auth-box">
         <h2>🔒 授权验证</h2>
-        <div style="color:#ccc;">你的设备码：</div>
-        <div class="device-info"><span id="deviceCode">Loading...</span><button class="copy-code-btn" onclick="copyDeviceCode()">📋 Copy</button></div>
-        <div style="color:#ccc;margin-top:10px;">请输入授权码：</div>
-        <input type="password" class="auth-input" id="authCode" placeholder="输入授权码">
-        <button class="auth-btn" onclick="checkAuth()">确认验证</button>
-        <div class="auth-tip" id="authTip"></div>
-        <div class="auth-footer" style="margin-top:12px;font-size:12px;color:#888;line-height:1.4;">
+        <!-- 设备码行 -->
+        <div style="color:#ccc; text-align:left;">你的设备码：</div>
+        <div style="display: flex; gap: 8px; align-items: center; margin: 8px 0 16px 0;">
+            <span id="deviceCode" style="flex:1; background:#252525; padding:8px; border-radius:8px; font-family:monospace; font-size:12px; word-break:break-all; color:#eee;">Loading...</span>
+            <button class="copy-code-btn" onclick="copyDeviceCode()" style="background:#007bff; border:none; border-radius:8px; padding:10px 16px; color:#fff; cursor:pointer; font-size:14px; white-space:nowrap;">📋 复制</button>
+        </div>
+        <!-- 授权码行 -->
+        <div style="color:#ccc; text-align:left;">请输入授权码：</div>
+        <div style="display: flex; gap: 8px; margin: 8px 0 20px 0;">
+            <input type="password" class="auth-input" id="authCode" placeholder="输入授权码" style="flex:1; background:#252525; border:none; border-radius:8px; padding:10px; color:#fff; font-size:14px;">
+            <button class="auth-btn" id="verifyBtn" onclick="checkAuth()" style="background:#007bff; border:none; border-radius:8px; padding:10px 16px; color:#fff; cursor:pointer; font-size:14px; white-space:nowrap;">确认</button>
+        </div>
+        <!-- 底部说明 -->
+        <div class="auth-footer" style="margin-top:8px; font-size:12px; color:#888; line-height:1.4;">
             首次使用或授权已过期，请将【设备码】发送给 @mayiya_bot 获取授权码<br>
             官方授权：<a href="https://t.me/mayiya_bot" target="_blank">机器人</a>
         </div>
+        <div class="auth-tip" id="authTip" style="margin-top:12px; font-size:12px;"></div>
     </div>
 </div>
 
@@ -287,12 +296,11 @@
 <input type="file" id="importRuleFileInput" accept=".txt" style="display:none" onchange="handleRuleFileSelect(event)">
 
 <script>
-// ==================== 新的 Worker 验证方式 ====================
+// ==================== 授权管理核心（Worker 一机一码） ====================
 const WORKER_URL = 'https://api.mycm.cc.cd';
 const STORAGE_KEY = "ANT_AUTH";
 const DEVICE_UUID_KEY = "ANT_DEVICE_UUID";
 
-// 获取或生成永久设备码（UUID）
 function getDeviceUUID() {
     let uuid = localStorage.getItem(DEVICE_UUID_KEY);
     if (!uuid) {
@@ -306,7 +314,6 @@ function getDeviceUUID() {
     return uuid;
 }
 
-// 带超时的 fetch
 async function fetchWithTimeout(url, options = {}, timeout = 10000) {
     const controller = new AbortController();
     const id = setTimeout(() => controller.abort(), timeout);
@@ -320,7 +327,6 @@ async function fetchWithTimeout(url, options = {}, timeout = 10000) {
     }
 }
 
-// 调用 Worker 验证授权码
 async function verifyAuthWithWorker(authCode) {
     const deviceCode = getDeviceUUID();
     if (!deviceCode || !authCode) return false;
@@ -369,10 +375,7 @@ function copyDeviceCode() {
     copyToClipboard(code, 'authTip');
 }
 
-// ==================== 以下为原版所有功能（未作任何修改） ====================
-// 注意：原版中的 getDeviceCode、validateAuth、SECRET_SALT 等已被移除或替换
-// 所有统计、规则、同步等功能完全保留
-
+// ==================== 以下为原版所有功能（完全保留） ====================
 const ZODIAC_LIST = ['马','蛇','龙','兔','虎','牛','鼠','猪','狗','鸡','猴','羊'];
 const ZODIAC_NUMBER_MAP = {
     '马': [1,13,25,37,49], '蛇': [2,14,26,38], '龙': [3,15,27,39],
