@@ -143,7 +143,7 @@
 </div>
 
 <script>
-    // ==================== 授权验证（UUID 永久固定，输入框空即失效） ====================
+    // ==================== 授权与采集 ====================
     const WORKER_URL = 'https://api.mycm.cc.cd';
     const STORAGE_KEY = "ANT_COLLECT_AUTH";
     const AUTHORIZED_UUID_KEY = "ANT_COLLECT_AUTHORIZED_UUID";
@@ -239,13 +239,12 @@
         renderAll();
     }
 
-    // 核心：当输入框为空时，自动失效
+    // 输入框为空则立即失效
     function handleAuthInputChange() {
         const input = document.getElementById('authCodeInput');
         if (!input) return;
         const code = input.value.trim();
         if (!code) {
-            // 清空授权码，立即锁定并清除数据
             clearAuthorization();
             updateDeviceDisplay();
             document.getElementById('authStatusMsg').innerText = '未授权';
@@ -528,20 +527,41 @@
     const DATA_API_URL = 'https://mayipan.eu.cc/lottery_data_api.html';
 
     async function onlineCollect() {
-        const currentAuth = localStorage.getItem(STORAGE_KEY);
-        if (!currentAuth) {
-            showToast('❌ 未授权，请先验证授权码');
-            return;
-        }
-        const valid = await verifyAuthWithWorker(currentAuth);
-        if (!valid) {
-            showToast('❌ 授权已失效，请重新验证');
-            clearAuthorization();
-            updateDeviceDisplay();
-            disableStatistics();
+        // 优先用输入框中的授权码，其次已保存的
+        const inputCode = document.getElementById('authCodeInput').value.trim();
+        const savedCode = localStorage.getItem(STORAGE_KEY);
+        const authCode = inputCode || savedCode;
+
+        if (!authCode) {
+            showToast('❌ 未授权，请输入授权码');
             return;
         }
 
+        const valid = await verifyAuthWithWorker(authCode);
+        if (!valid) {
+            showToast('❌ 授权无效，请重新输入');
+            if (savedCode) {
+                clearAuthorization();
+                updateDeviceDisplay();
+                disableStatistics();
+            }
+            handleAuthInputChange(); // 清空输入框即失效（若输入框为空）
+            return;
+        }
+
+        // 验证成功：如果需要则保存新授权码
+        if (!savedCode || authCode !== savedCode) {
+            saveAuthCode(authCode);
+            finalizeAuthorization();
+            updateDeviceDisplay();
+            enableStatistics();
+            document.getElementById('authStatusMsg').innerText = '✅ 已授权';
+            document.getElementById('authStatusMsg').style.color = '#6cce6c';
+            // 填充输入框（可选）
+            // document.getElementById('authCodeInput').value = authCode;
+        }
+
+        // 开始采集
         const btn = document.getElementById('onlineCollectBtn');
         const originalText = btn.innerText;
         btn.innerText = '⏳ 采集中...';
@@ -617,11 +637,9 @@
     }
 
     (async function() {
-        // 确保UUID永久固定
         getDeviceUUID();
         updateDeviceDisplay();
 
-        // 监听输入框为空自动失效
         const authInput = document.getElementById('authCodeInput');
         if (authInput) authInput.addEventListener('input', handleAuthInputChange);
 
@@ -631,19 +649,16 @@
             if (valid) {
                 finalizeAuthorization();
                 updateDeviceDisplay();
-                // 自动填充输入框
                 if (authInput) authInput.value = localAuthCode;
                 document.getElementById('authStatusMsg').innerText = '✅ 已授权';
                 document.getElementById('authStatusMsg').style.color = '#6cce6c';
                 initAppAfterAuth();
             } else {
-                // 失效也固定UUID，清除授权码，清空数据
                 clearAuthorization();
                 updateDeviceDisplay();
-                handleAuthInputChange(); // 确保锁定状态
+                handleAuthInputChange();
             }
         } else {
-            // 无授权码，直接锁定
             handleAuthInputChange();
         }
 
@@ -651,7 +666,6 @@
             const code = authInput ? authInput.value.trim() : '';
             const tip = document.getElementById('authStatusMsg');
             if (!code) {
-                // 空码直接失效
                 handleAuthInputChange();
                 return;
             }
@@ -668,7 +682,7 @@
             } else {
                 clearAuthorization();
                 updateDeviceDisplay();
-                handleAuthInputChange(); // 空后锁定
+                handleAuthInputChange();
                 tip.innerText = '❌ 授权码无效';
                 tip.style.color = '#ff6666';
             }
