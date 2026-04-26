@@ -10,70 +10,26 @@
 
         /* 顶部授权卡片 */
         .auth-card {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex-wrap: wrap;
-            margin-bottom: 16px;
-            padding: 12px;
-            background: #1e1e1e;
-            border-radius: 16px;
-            border: 1px solid #2c2c2c;
+            display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; padding: 12px;
+            background: #1e1e1e; border-radius: 16px; border: 1px solid #2c2c2c;
         }
         .auth-card .device-code {
-            font-family: monospace;
-            background: #252525;
-            padding: 0 12px;
-            border-radius: 20px;
-            color: #facc15;
-            font-size: 12px;
-            cursor: pointer;
-            height: 36px;
-            line-height: 36px;
-            display: flex;
-            align-items: center;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            flex: none;
-            width: auto;
+            font-family: monospace; background: #252525; padding: 0 12px; border-radius: 20px; color: #facc15;
+            font-size: 12px; cursor: pointer; height: 36px; line-height: 36px; display: flex; align-items: center;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: none; width: auto;
         }
         .auth-card input {
-            background: #252525;
-            border: 1px solid #2c2c2c;
-            border-radius: 8px;
-            padding: 0 12px;
-            color: #eee;
-            font-size: 13px;
-            width: 120px;
-            height: 36px;
-            line-height: 36px;
+            background: #252525; border: 1px solid #2c2c2c; border-radius: 8px; padding: 0 12px; color: #eee;
+            font-size: 13px; width: 120px; height: 36px; line-height: 36px;
         }
         .auth-card button {
-            background: #252525;
-            color: #fff;
-            border: none;
-            border-radius: 8px;
-            font-size: 13px;
-            cursor: pointer;
-            white-space: nowrap;
-            height: 36px;
-            line-height: 36px;
-            flex: none;
-            width: auto;
-            min-width: 0;
-            padding: 0 16px;
+            background: #252525; color: #fff; border: none; border-radius: 8px; font-size: 13px; cursor: pointer;
+            white-space: nowrap; height: 36px; line-height: 36px; flex: none; width: auto; min-width: 0; padding: 0 16px;
         }
         .auth-card button:active { transform: scale(0.96); opacity: 0.9; }
-        .auth-card .auth-tip {
-            color: #aaa;
-            font-size: 11px;
-            margin-left: 4px;
-            white-space: nowrap;
-            flex-shrink: 0;
-        }
+        .auth-card .auth-tip { color: #aaa; font-size: 11px; margin-left: 4px; white-space: nowrap; flex-shrink: 0; }
 
-        /* 业务卡片及原有样式 */
+        /* 业务卡片 */
         .card { background:#1e1e1e; border-radius:20px; padding:16px; margin-bottom:16px; border:1px solid #2c2c2c; transition: opacity 0.3s; }
         .card.disabled-section { opacity: 0.4; pointer-events: none; }
         .card-header { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid #2c2c2c; }
@@ -119,36 +75,20 @@
         @media (max-width:560px) { .freq-table th, .freq-table td, .zodiac-rank-table th, .zodiac-rank-table td { padding:4px 2px; font-size:10px; } }
         #currentDateTime { font-family: monospace; background:#0d0d0d; padding:4px 12px; border-radius:40px; font-size:12px; letter-spacing:0.5px; border:1px solid #2c2c2c; white-space:nowrap; }
         .scroll-container {
-            background: #0d0d0d;
-            border-radius: 30px;
-            padding: 6px 12px;
-            margin: 12px 0 8px 0;
-            overflow: hidden;
-            white-space: nowrap;
-            box-sizing: border-box;
-            border: 1px solid #2c2c2c;
+            background: #0d0d0d; border-radius: 30px; padding: 6px 12px; margin: 12px 0 8px 0; overflow: hidden;
+            white-space: nowrap; box-sizing: border-box; border: 1px solid #2c2c2c;
         }
         .scroll-text {
-            display: inline-block;
-            padding-left: 100%;
-            animation: scroll-left 20s linear infinite;
-            font-size: 13px;
-            color: #facc15;
+            display: inline-block; padding-left: 100%; animation: scroll-left 20s linear infinite;
+            font-size: 13px; color: #facc15;
         }
         @keyframes scroll-left {
             0% { transform: translateX(0); }
             100% { transform: translateX(-100%); }
         }
-        .scroll-container:hover .scroll-text {
-            animation-play-state: paused;
-        }
+        .scroll-container:hover .scroll-text { animation-play-state: paused; }
         .license-tag {
-            background: #0d0d0d;
-            border-radius: 30px;
-            padding: 4px 12px;
-            font-size: 12px;
-            display: inline-block;
-            margin-bottom: 8px;
+            background: #0d0d0d; border-radius: 30px; padding: 4px 12px; font-size: 12px; display: inline-block; margin-bottom: 8px;
         }
     </style>
 </head>
@@ -213,9 +153,9 @@
 </div>
 
 <script>
-    // ==================== Worker 授权验证（采集系统专用存储键） ====================
+    // ==================== Worker 授权验证（采集系统独立存储） ====================
     const WORKER_URL = 'https://api.mycm.cc.cd';
-    const STORAGE_KEY = "ANT_COLLECT_AUTH";               // 与统计系统的 ANT_AUTH 隔离
+    const STORAGE_KEY = "ANT_COLLECT_AUTH";
     const AUTHORIZED_UUID_KEY = "ANT_COLLECT_AUTHORIZED_UUID";
     const TEMP_UUID_KEY = "ANT_COLLECT_TEMP_UUID";
 
@@ -303,12 +243,22 @@
         document.getElementById('licenseInfo').innerText = '✅ 已授权';
     }
 
-    // 锁定统计区 & 更新状态标签
+    // 锁定统计区 & 更新状态标签，同时清空数据
     function disableStatistics() {
         document.getElementById('freqCard').classList.add('disabled-section');
         document.getElementById('zodiacCard').classList.add('disabled-section');
         document.getElementById('missCard').classList.add('disabled-section');
         document.getElementById('licenseInfo').innerText = '❌ 未授权';
+        // 清空所有数据
+        clearAllData();
+    }
+
+    // 清空采集数据并重新渲染
+    function clearAllData() {
+        allRecords = [];
+        currentDisplayRecords = [];
+        localStorage.removeItem('last_collected_data');
+        renderAll();
     }
 
     // ==================== 业务逻辑 ====================
@@ -602,7 +552,7 @@
             showToast('❌ 授权已失效，请重新验证');
             clearAuthorization();
             updateDeviceDisplay();
-            disableStatistics();
+            disableStatistics(); // 内部会清空数据
             return;
         }
 
@@ -705,7 +655,7 @@
                 updateDeviceDisplay();
                 document.getElementById('authStatusMsg').innerText = '授权无效';
                 document.getElementById('authStatusMsg').style.color = '#ff6666';
-                disableStatistics();
+                disableStatistics(); // 内部清空数据
             }
         } else {
             localStorage.removeItem(AUTHORIZED_UUID_KEY);
@@ -714,7 +664,7 @@
             updateDeviceDisplay();
             document.getElementById('authStatusMsg').innerText = '未授权';
             document.getElementById('authStatusMsg').style.color = '#ff6666';
-            disableStatistics();
+            disableStatistics(); // 内部清空数据
         }
 
         document.getElementById('verifyBtn').onclick = async () => {
@@ -740,7 +690,7 @@
                 updateDeviceDisplay();
                 tip.innerText = '❌ 授权码无效';
                 tip.style.color = '#ff6666';
-                disableStatistics();
+                disableStatistics(); // 内部清空数据
             }
         };
     })();
