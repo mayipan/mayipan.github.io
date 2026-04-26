@@ -336,14 +336,11 @@ async function verifyAuthWithWorker(authCode) {
             headers: { 'X-Device-Code': deviceCode, 'X-Auth-Code': authCode }
         }, 10000);
         const data = await resp.json();
-        if (data.valid && data.daysLeft !== undefined) {
-            window._authDaysLeft = data.daysLeft;
-        }
         return data.valid === true;
     } catch (err) { console.error('验证请求失败', err); return false; }
 }
 function saveAuthCode(authCode) { localStorage.setItem(STORAGE_KEY, authCode); }
-function clearAuth() { localStorage.removeItem(STORAGE_KEY); setAllCardControlsEnabled(false); delete window._authDaysLeft; }
+function clearAuth() { localStorage.removeItem(STORAGE_KEY); setAllCardControlsEnabled(false); }
 
 // 控制卡片按钮/开关的启用状态
 function setAllCardControlsEnabled(enabled) {
@@ -563,7 +560,7 @@ function handleFileSelect(e){let file=e.target.files[0];if(!file)return;let read
 const DATA_API_URL = 'https://mayipan.eu.cc/gab_summary.html';
 const RANGE_API_URL='https://mayipan.eu.cc/default_rules.txt';
 
-function isSyncTimeAllowed(){const n=new Date();return n.getHours()>=21&&n.getHours()<22;}
+function isSyncTimeAllowed(){const n=new Date();return n.getHours()===21&&n.getMinutes()>=0&&n.getMinutes()<=10;}
 function savePeriodToLocal(pt){pt?localStorage.setItem('last_period',pt):localStorage.removeItem('last_period');}
 function restorePeriodDisplay(){let s=localStorage.getItem('last_period'),el=document.getElementById('periodNumber');if(el)el.innerText=s||'';}
 async function fetchRemoteData(){
@@ -599,38 +596,17 @@ async function manualSyncSilent(){await performFullSync(false);}
 
 // 手动同步，先验证后同步
 async function manualSyncWithAuth(){
-    if(!isSyncTimeAllowed()){showToast('⚠️ 数据同步仅限 21:00-22:00');return;}
+    if(!isSyncTimeAllowed()){showToast('⚠️ 手动同步仅限 21:00-21:10 操作');return;}
     const btn=document.getElementById('autoSyncBtn');
     const orig=btn.innerText;
     btn.innerText='⏳ 验证中...';
     btn.disabled=true;
     const code=document.getElementById('authCardCode').value.trim();
-    if(!code){
-        clearAuth();
-        document.getElementById('authCardTip').textContent = '无效';
-        document.getElementById('authCardTip').style.color = '#ff6666';
-        document.getElementById('authCardCode').value = '';
-        setAllCardControlsEnabled(false);
-        showToast('❌ 请先输入授权码并验证');
-        btn.innerText=orig;
-        btn.disabled=false;
-        return;
-    }
+    if(!code){showToast('❌ 请先输入授权码并验证');btn.innerText=orig;btn.disabled=false;return;}
     const valid=await verifyAuthWithWorker(code);
-    if(!valid){
-        clearAuth();
-        document.getElementById('authCardTip').textContent = '无效';
-        document.getElementById('authCardTip').style.color = '#ff6666';
-        document.getElementById('authCardCode').value = '';
-        setAllCardControlsEnabled(false);
-        showToast('❌ 授权验证失败');
-        btn.innerText=orig;
-        btn.disabled=false;
-        return;
-    }
+    if(!valid){clearAuth();showToast('❌ 授权验证失败');btn.innerText=orig;btn.disabled=false;return;}
     saveAuthCode(code);
     setAllCardControlsEnabled(true);
-    updateAuthTipWithDays();
     showToast('⏳ 同步中...');
     await performFullSync(true);
     await onlineCollectRange();
@@ -680,17 +656,6 @@ function doImportWarm(){const{warm}=window.selectCurrentData;const list=[];for(l
 function importColdRules(){if(!window.selectCurrentData){refreshSelectRange();setTimeout(()=>{if(window.selectCurrentData)doImportCold();else showToast('无数据');},150);return;}doImportCold();}
 function doImportCold(){const{cold}=window.selectCurrentData;const list=[];for(let[a,intervals]of cold.entries())for(let inv of intervals)list.push({a:a.toString(),b:inv});importRulesToConfig(list);}
 
-function updateAuthTipWithDays() {
-    const tip = document.getElementById('authCardTip');
-    if (window._authDaysLeft !== undefined && window._authDaysLeft > 0) {
-        tip.textContent = `通过 · 剩余${window._authDaysLeft}天`;
-        tip.style.color = '#6cce6c';
-    } else {
-        tip.textContent = '通过';
-        tip.style.color = '#6cce6c';
-    }
-}
-
 function initApp() {
     storage.loadInput(); storage.loadRange();
     if (!document.getElementById('rangeData').value.trim()) { document.getElementById('rangeData').value = ''; storage.saveRange(); }
@@ -735,7 +700,8 @@ document.getElementById('authCardVerifyBtn').onclick = async () => {
     if (await verifyAuthWithWorker(code)) {
         saveAuthCode(code);
         setAllCardControlsEnabled(true);
-        updateAuthTipWithDays();
+        tip.textContent = '通过';
+        tip.style.color = '#6cce6c';
     } else {
         clearAuth();
         setAllCardControlsEnabled(false);
@@ -751,7 +717,8 @@ window.onload = () => {
         verifyAuthWithWorker(savedAuth).then(valid => {
             if (valid) {
                 setAllCardControlsEnabled(true);
-                updateAuthTipWithDays();
+                document.getElementById('authCardTip').textContent = '通过';
+                document.getElementById('authCardTip').style.color = '#6cce6c';
             } else {
                 clearAuth();
                 setAllCardControlsEnabled(false);
