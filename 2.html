@@ -142,7 +142,6 @@
         .scroll-container:hover .scroll-text {
             animation-play-state: paused;
         }
-        /* 授权状态标签 */
         .license-tag {
             background: #0d0d0d;
             border-radius: 30px;
@@ -155,7 +154,6 @@
 </head>
 <body>
 
-<!-- 主界面（无全屏浮层） -->
 <div id="appContainer">
     <div class="container">
         <!-- 顶部授权卡片 -->
@@ -215,11 +213,11 @@
 </div>
 
 <script>
-    // ==================== Worker 授权验证 ====================
+    // ==================== Worker 授权验证（采集系统专用存储键） ====================
     const WORKER_URL = 'https://api.mycm.cc.cd';
-    const STORAGE_KEY = "ANT_AUTH";
-    const AUTHORIZED_UUID_KEY = "ANT_AUTHORIZED_UUID";
-    const TEMP_UUID_KEY = "ANT_TEMP_UUID";
+    const STORAGE_KEY = "ANT_COLLECT_AUTH";               // 与统计系统的 ANT_AUTH 隔离
+    const AUTHORIZED_UUID_KEY = "ANT_COLLECT_AUTHORIZED_UUID";
+    const TEMP_UUID_KEY = "ANT_COLLECT_TEMP_UUID";
 
     function generateUUID() {
         if (crypto.randomUUID) return crypto.randomUUID();
@@ -313,7 +311,7 @@
         document.getElementById('licenseInfo').innerText = '❌ 未授权';
     }
 
-    // ==================== 业务逻辑（保持不变） ====================
+    // ==================== 业务逻辑 ====================
     let allRecords = [], currentDisplayRecords = [];
     let autoCollectDone = false;
 
@@ -594,13 +592,11 @@
 
     // 在线采集（先验证授权）
     async function onlineCollect() {
-        // 验证授权状态
         const currentAuth = localStorage.getItem(STORAGE_KEY);
         if (!currentAuth) {
             showToast('❌ 未授权，请先验证授权码');
             return;
         }
-        // 二次验证确保 authCode 有效
         const valid = await verifyAuthWithWorker(currentAuth);
         if (!valid) {
             showToast('❌ 授权已失效，请重新验证');
@@ -671,7 +667,7 @@
     }
 
     function initAppAfterAuth() {
-        enableStatistics();  // 解锁并显示“✅ 已授权”
+        enableStatistics();
         if(clockInterval) clearInterval(clockInterval);
         updateCurrentDateTime();
         clockInterval = setInterval(updateCurrentDateTime, 1000);
