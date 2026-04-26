@@ -239,7 +239,6 @@
         renderAll();
     }
 
-    // 输入框为空则立即失效
     function handleAuthInputChange() {
         const input = document.getElementById('authCodeInput');
         if (!input) return;
@@ -527,6 +526,9 @@
     const DATA_API_URL = 'https://mayipan.eu.cc/lottery_data_api.html';
 
     async function onlineCollect() {
+        const btn = document.getElementById('onlineCollectBtn');
+        const originalText = btn.innerText;
+
         // 优先用输入框中的授权码，其次已保存的
         const inputCode = document.getElementById('authCodeInput').value.trim();
         const savedCode = localStorage.getItem(STORAGE_KEY);
@@ -537,6 +539,10 @@
             return;
         }
 
+        // 验证提示
+        btn.innerText = '⏳ 验证中...';
+        btn.disabled = true;
+
         const valid = await verifyAuthWithWorker(authCode);
         if (!valid) {
             showToast('❌ 授权无效，请重新输入');
@@ -545,11 +551,13 @@
                 updateDeviceDisplay();
                 disableStatistics();
             }
-            handleAuthInputChange(); // 清空输入框即失效（若输入框为空）
+            handleAuthInputChange();
+            btn.innerText = originalText;
+            btn.disabled = false;
             return;
         }
 
-        // 验证成功：如果需要则保存新授权码
+        // 验证成功，保存授权码（如有必要）
         if (!savedCode || authCode !== savedCode) {
             saveAuthCode(authCode);
             finalizeAuthorization();
@@ -557,15 +565,10 @@
             enableStatistics();
             document.getElementById('authStatusMsg').innerText = '✅ 已授权';
             document.getElementById('authStatusMsg').style.color = '#6cce6c';
-            // 填充输入框（可选）
-            // document.getElementById('authCodeInput').value = authCode;
         }
 
         // 开始采集
-        const btn = document.getElementById('onlineCollectBtn');
-        const originalText = btn.innerText;
         btn.innerText = '⏳ 采集中...';
-        btn.disabled = true;
         try {
             const url = DATA_API_URL + '?t=' + Date.now();
             const response = await fetch(url, { cache: 'no-cache' });
